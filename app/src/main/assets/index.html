@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>StockKlineMaster · 炒股K线学习助手</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a1628;--card:#0f1f3d;--gold:#d4a843;--text:#e0e0e0;--accent:#2a5298;--green:#4caf84;--red:#e0555a}
+body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:420px;margin:0 auto;overflow-x:hidden;padding-bottom:70px}
+#loading{position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+#loading .spinner{width:36px;height:36px;border:3px solid var(--accent);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite}
+#loading p{color:var(--gold);font-size:15px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.header{background:linear-gradient(135deg,#0a1628 0%,#1a2a4a 100%);padding:20px 16px 12px;border-bottom:1px solid rgba(212,168,67,0.15)}
+.header h1{font-size:20px;color:var(--gold);text-align:center;margin-bottom:4px}
+.header .sub{font-size:12px;color:#8899aa;text-align:center}
+.progress-wrap{display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--card);margin:0 12px;border-radius:8px;margin-top:8px}
+.progress-bar{flex:1;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:3px;transition:width 0.4s}
+.progress-text{font-size:11px;color:var(--gold);white-space:nowrap}
+.tab-content{display:none;padding:12px}
+.tab-content.active{display:block}
+/* 学习Tab */
+.chapter-card{background:var(--card);border-radius:10px;padding:14px;margin-bottom:10px;border-left:3px solid var(--gold);cursor:pointer;transition:0.2s}
+.chapter-card:hover{transform:translateX(4px);box-shadow:0 2px 12px rgba(212,168,67,0.15)}
+.chapter-card.locked{opacity:0.5;border-left-color:#555;cursor:not-allowed}
+.chapter-card.locked:hover{transform:none;box-shadow:none}
+.chapter-card .ch-num{font-size:11px;color:var(--gold);text-transform:uppercase}
+.chapter-card .ch-title{font-size:17px;font-weight:700;margin:2px 0}
+.chapter-card .ch-sub{font-size:12px;color:#8899aa}
+.chapter-card .ch-meta{display:flex;gap:12px;margin-top:6px;font-size:11px;color:#667788}
+.ch-completed{display:inline-block;background:var(--green);color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;margin-left:8px}
+/* 阅读器 */
+.reader{padding:8px}
+.reader .section{margin-bottom:14px}
+.reader .section-title{font-size:16px;color:var(--gold);margin-bottom:6px;font-weight:700}
+.reader .section-content{font-size:15px;line-height:1.7;color:var(--text);text-align:justify}
+.reader .section-content b{color:var(--gold)}
+.reader .section-content .gold{color:var(--gold);font-weight:700}
+.reader canvas{display:block;margin:8px auto;max-width:100%;border-radius:6px}
+.reader .btn-row{display:flex;gap:8px;margin:14px 0}
+.reader button{padding:10px 18px;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700}
+.btn-primary{background:var(--gold);color:#0a1628}
+.btn-secondary{background:var(--accent);color:#fff}
+.btn-back{background:transparent;color:var(--gold);border:1px solid var(--gold)!important}
+button:disabled{opacity:0.4;cursor:not-allowed}
+/* 测验 */
+.quiz-wrap{padding:8px;margin-top:20px;border-top:2px solid var(--gold)}
+.quiz-wrap h3{color:var(--gold);font-size:16px;margin-bottom:10px}
+.quiz-q{margin-bottom:16px}
+.quiz-q .q-text{font-size:14px;margin-bottom:6px}
+.quiz-q .q-opt{display:block;width:100%;text-align:left;padding:10px 12px;margin:4px 0;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text);font-size:13px;cursor:pointer;transition:0.15s}
+.quiz-q .q-opt:hover{background:rgba(212,168,67,0.1)}
+.quiz-q .q-opt.correct{background:rgba(76,175,132,0.2);border-color:var(--green)}
+.quiz-q .q-opt.wrong{background:rgba(224,85,90,0.2);border-color:var(--red)}
+.quiz-result{text-align:center;padding:12px;font-size:15px;margin:10px 0;border-radius:8px}
+/* 速查Tab */
+.quick-search{padding:12px}
+.quick-search input{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:var(--card);color:var(--text);font-size:14px;margin-bottom:10px}
+.quick-card{background:var(--card);border-radius:8px;padding:12px;margin-bottom:8px}
+.quick-card .qk-title{font-size:15px;color:var(--gold);font-weight:700}
+.quick-card .qk-def{font-size:13px;color:var(--text);margin-top:4px}
+.quick-card .qk-signal{font-size:12px;color:#8899aa;margin-top:2px}
+/* 实战Tab */
+.battle-scene{text-align:center;padding:20px}
+.battle-scene canvas{border-radius:8px;margin:8px auto;display:block}
+.battle-scene .question{font-size:15px;color:var(--text);margin:10px 0}
+.battle-scene button{margin:4px;padding:10px 20px;font-size:13px}
+.battle-result{padding:10px;border-radius:8px;margin:8px 0;font-size:14px}
+/* 我的Tab */
+.my-info{padding:16px}
+.my-info .stat-row{display:flex;justify-content:space-around;margin:12px 0}
+.my-info .stat-item{text-align:center}
+.my-info .stat-num{font-size:24px;color:var(--gold);font-weight:700}
+.my-info .stat-label{font-size:11px;color:#8899aa}
+.my-info button{display:block;width:100%;margin:8px 0;padding:12px;border-radius:8px;font-size:14px;background:var(--card);color:var(--text);border:1px solid rgba(255,255,255,0.1);text-align:left;cursor:pointer}
+/* 底部Tab */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;max-width:420px;margin:0 auto;background:var(--card);border-top:1px solid rgba(212,168,67,0.15);display:flex;z-index:100}
+.bottom-nav .tab-btn{flex:1;padding:8px 4px 6px;text-align:center;background:none;border:none;color:#667788;font-size:10px;cursor:pointer;transition:0.2s}
+.bottom-nav .tab-btn.active{color:var(--gold)}
+.bottom-nav .tab-btn .tab-icon{font-size:18px;display:block;margin-bottom:1px}
+/* toast */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--gold);color:#0a1628;padding:8px 16px;border-radius:20px;font-size:13px;z-index:999;animation:fadeInOut 1.5s forwards}
+@keyframes fadeInOut{0%{opacity:0;transform:translateX(-50%) translateY(-10px)}20%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0}}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <p>K线学习助手加载中...</p>
+</div>
+
+<header class="header">
+  <h1>📈 StockKlineMaster</h1>
+  <div class="sub">A股K线学习助手 · 从零到精通</div>
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <span class="progress-text" id="progress-text">0/10 (0%)</span>
+  </div>
+</header>
+
+<!-- 学习Tab -->
+<div class="tab-content active" id="tab-learn">
+  <div id="chapter-list"></div>
+</div>
+
+<!-- 速查Tab -->
+<div class="tab-content" id="tab-quick"></div>
+
+<!-- 实战Tab -->
+<div class="tab-content" id="tab-battle"></div>
+
+<!-- 我的Tab -->
+<div class="tab-content" id="tab-my"></div>
+
+<!-- 底部导航 -->
+<nav class="bottom-nav">
+  <button class="tab-btn active" id="btn-learn" onclick="switchTab('learn');renderChapterList()">
+    <span class="tab-icon">📚</span>学习
+  </button>
+  <button class="tab-btn" id="btn-quick" onclick="switchTab('quick');renderQuickRef()">
+    <span class="tab-icon">⚡</span>速查
+  </button>
+  <button class="tab-btn" id="btn-battle" onclick="switchTab('battle');renderBattleScene()">
+    <span class="tab-icon">📈</span>实战
+  </button>
+  <button class="tab-btn" id="btn-my" onclick="switchTab('my');renderMyPage()">
+    <span class="tab-icon">👤</span>我的
+  </button>
+</nav>
+
+<!-- 课程数据（隔离存储） -->
+<script type="application/json" id="courses-data">
+[{"id": 1, "title": "K线基础入门", "subtitle": "日本蜡烛图技术 · Steve Nison", "icon": "🕯️", "sections": [{"type": "story", "title": "📖 起源故事", "content": "300多年前的日本大阪，一位名叫本间宗久的米商发明了世界上最早的K线图。他每天记录大米的开盘价、最高价、最低价、收盘价，用蜡烛形状来观察市场情绪。这套方法后来传遍全球，成为所有交易者必学的基本功。"}, {"type": "knowledge", "title": "🔑 单根K线的构成", "content": "每根K线由4个价格组成：<b>开盘价</b>（蜡烛的起点）、<b>收盘价</b>（蜡烛的终点）、<b>最高价</b>（上影线顶端）、<b>最低价</b>（下影线底端）。实体部分=开盘与收盘之间的矩形。", "canvas": "single_kline"}, {"type": "knowledge", "title": "☀️ 阳线与🌙 阴线", "content": "<b>阳线</b>（红色/空心）：收盘价 > 开盘价，买方力量强。实体越长，涨势越猛。<br><b>阴线</b>（绿色/实心）：收盘价 < 开盘价，卖方力量强。实体越长，跌势越凶。", "canvas": "yang_yin"}, {"type": "knowledge", "title": "📏 上下影线的含义", "content": "<b>上影线</b>：盘中冲到过更高价但被压回，反映上方抛压。<br><b>下影线</b>：盘中跌到过更低价但被买回，反映下方支撑。<br>长下影线+小实体=可能见底；长上影线+小实体=可能见顶。"}, {"type": "knowledge", "title": "✚ 十字星", "content": "开盘价≈收盘价，实体极小。反映多空力量均衡，是趋势可能反转的信号。高位十字星看跌，低位十字星看涨。"}, {"type": "knowledge", "title": "🔍 A股实战提示", "content": "A股涨跌停±10%（创业板±20%），K线实体最大不超过涨跌停幅度。一字板（开盘=收盘=最高=最低）代表极端情绪。"}], "quiz": [{"q": "K线图中，当收盘价高于开盘价时，这根K线是？", "a": ["阳线", "阴线", "十字星", "一字线"], "correct": 0}, {"q": "K线的\"上影线\"顶端代表什么？", "a": ["开盘价", "收盘价", "最高价", "最低价"], "correct": 2}, {"q": "长下影线的K线通常意味着什么？", "a": ["上方抛压大", "下方支撑强", "趋势继续", "没有意义"], "correct": 1}, {"q": "十字星出现时，反映了什么市场状态？", "a": ["买方绝对强势", "卖方绝对强势", "多空力量均衡", "没有人交易"], "correct": 2}, {"q": "K线图最早起源于哪个国家？", "a": ["美国", "英国", "日本", "中国"], "correct": 2}]}, {"id": 2, "title": "经典K线组合形态", "subtitle": "形态识别 · 成功率统计", "icon": "🔬", "sections": [{"type": "story", "title": "📖 形态的智慧", "content": "单根K线只能看到一天的战斗，形态组合则能看到一场战役。就像读小说不能只看一个词，要看整句话——K线形态就是市场的\"语言\"。"}, {"type": "knowledge", "title": "🔨 锤子线与上吊线", "content": "<b>锤子线</b>（底部反转）：出现在下跌趋势末端，实体小、下影线≥实体2倍、上影线极短或无。成功率约60%。<br><b>上吊线</b>（顶部反转）：形态相同但出现在上涨趋势末端，信号相反。", "canvas": "hammer"}, {"type": "knowledge", "title": "🐂 吞没形态", "content": "<b>看涨吞没</b>：阴线后紧跟一根更大的阳线，阳线实体完全\"吞没\"前一根阴线。买方逆转信号！<br><b>看跌吞没</b>：阳线后紧跟更大的阴线。卖方反扑信号！成功率约65-70%。", "canvas": "engulfing"}, {"type": "knowledge", "title": "⭐ 启明星与黄昏星", "content": "<b>启明星</b>（三根）：阴线→小实体（跳空低开）→阳线（跳空高开）。底部反转信号，成功率约70%。<br><b>黄昏星</b>：形态相反，顶部反转信号。"}, {"type": "knowledge", "title": "🐦 三只乌鸦", "content": "连续三根阴线，每根开盘价都在前一根实体内，收盘价接近当日最低。强烈的下跌趋势确认信号！成功率约78%。"}, {"type": "knowledge", "title": "💪 三兵形态", "content": "连续三根阳线，每根收盘价逐步抬高。上涨趋势健康延续的信号。但要警惕第三根出现长上影——可能是强弩之末。"}, {"type": "knowledge", "title": "☁️ 乌云盖顶", "content": "阳线后出现阴线，阴线开盘价高于前阳线收盘价（跳空高开），但收盘价跌入前阳线实体内一半以上。顶部反转信号！"}], "quiz": [{"q": "锤子线的下影线长度至少应该是实体的几倍？", "a": ["1倍", "2倍", "3倍", "没有要求"], "correct": 1}, {"q": "看涨吞没形态中，第二根K线应该是什么颜色？", "a": ["阴线", "阳线", "十字星", "都可以"], "correct": 1}, {"q": "三只乌鸦形态由几根K线组成？", "a": ["1根", "2根", "3根", "5根"], "correct": 2}, {"q": "乌云盖顶是哪种类型的信号？", "a": ["底部反转", "顶部反转", "趋势延续", "震荡信号"], "correct": 1}, {"q": "三兵形态中如果第三根出现长上影，说明什么？", "a": ["上涨加速", "多方衰竭", "趋势确认", "没有含义"], "correct": 1}]}, {"id": 3, "title": "技术指标速查手册", "subtitle": "MA·MACD·RSI·KDJ·布林带", "icon": "📊", "sections": [{"type": "knowledge", "title": "📈 MA均线", "content": "<b>一句话</b>：过去N天收盘价的平均值连成的线。<br><b>公式</b>：MA(N)=sum(收盘价,N)/N<br><b>信号</b>：短期MA上穿长期MA=<b class='gold'>金叉</b>（买入）；下穿=<b class='gold'>死叉</b>（卖出）。常用：5日、10日、20日、60日。", "canvas": "ma_cross"}, {"type": "knowledge", "title": "📉 MACD", "content": "<b>一句话</b>：通过快慢均线的差值判断趋势强度和方向。<br><b>构成</b>：DIF线（快线）、DEA线（慢线）、柱状图（DIF-DEA）<br><b>信号</b>：DIF上穿DEA=金叉买；下穿=死叉卖；<b class='gold'>背离</b>：价格新高但MACD未新高→顶背离（卖出信号）", "canvas": "macd"}, {"type": "knowledge", "title": "📊 RSI相对强弱", "content": "<b>一句话</b>：衡量近期涨跌力量对比，0-100范围。<br><b>公式</b>：RSI=100-100/(1+RS)，RS=上涨均值/下跌均值<br><b>信号</b>：RSI>70=<b class='gold'>超买</b>（考虑卖出）；RSI<30=<b class='gold'>超卖</b>（考虑买入）；背离信号极强。", "canvas": "rsi"}, {"type": "knowledge", "title": "🔄 KDJ随机指标", "content": "<b>一句话</b>：判断当前价格在近期高低区间的位置。<br><b>构成</b>：K线（快）、D线（慢）、J线（最敏感）<br><b>信号</b>：K线从下方上穿D线=金叉；J线>100=超买；J线<0=超卖；<b class='gold'>J线拐头</b>是最灵敏信号。"}, {"type": "knowledge", "title": "🎗️ 布林带", "content": "<b>一句话</b>：用标准差画通道，判断价格极端位置。<br><b>构成</b>：中轨=MA(20)、上轨=中轨+2σ、下轨=中轨-2σ<br><b>信号</b>：价格触及上轨=超买；触及下轨=超卖；<b class='gold'>收口后开口</b>=大行情启动；<b class='gold'>开口后收口</b>=行情结束。", "canvas": "bollinger"}, {"type": "knowledge", "title": "📊 成交量VOL", "content": "<b>一句话</b>：价格是表象，量是本质——\"量在价先\"。<br><b>关键口诀</b>：<br>📈放量上涨=健康上涨，可持有<br>📉缩量下跌=下跌动力不足<br>⚠️天量天价=顶部信号<br>✅地量地价=底部信号"}], "quiz": [{"q": "MACD的金叉信号是指？", "a": ["DIF上穿DEA", "DIF下穿DEA", "柱状图变绿", "K线上穿D线"], "correct": 0}, {"q": "RSI指标中，通常认为多少以上是\"超买\"区域？", "a": ["50", "60", "70", "90"], "correct": 2}, {"q": "布林带收口后突然开口，通常意味着什么？", "a": ["行情结束", "大行情启动", "没有意义", "继续震荡"], "correct": 1}, {"q": "\"价升量缩\"在实战中通常是什么信号？", "a": ["上涨动力减弱", "超级强势", "应该追涨", "没有含义"], "correct": 0}, {"q": "KDJ指标中最灵敏的线是哪条？", "a": ["K线", "D线", "J线", "一样灵敏"], "correct": 2}]}, {"id": 4, "title": "道氏理论", "subtitle": "Charles Dow · 技术分析之基石", "icon": "🏛️", "sections": [{"type": "story", "title": "📖 华尔街日报上的传奇", "content": "1900年代，查尔斯·道在《华尔街日报》上发表了一系列社论，系统阐述了市场运行的规律。他从未将其命名为\"道氏理论\"，但后人整理了他的思想，成为所有技术分析的基石。"}, {"type": "knowledge", "title": "📐 三大核心假设", "content": "① <b>市场行为包容一切</b>：所有已知信息都已反映在价格中<br>② <b>市场呈趋势运行</b>：价格不是随机游走，有明确方向<br>③ <b>历史会重演</b>：人性不变，市场行为模式会重复"}, {"type": "knowledge", "title": "📏 三种趋势", "content": "<b>主要趋势</b>（潮汐）：持续1年以上，涨跌幅>20%<br><b>次级趋势</b>（波浪）：持续3周-3月，回调1/3-2/3<br><b>日间波动</b>（涟漪）：无关紧要，噪音"}, {"type": "knowledge", "title": "🔄 趋势三阶段", "content": "<b>上升趋势</b>：①累积阶段（聪明钱入场）→ ②参与阶段（趋势明确）→ ③派发阶段（聪明钱退出）<br><b>下跌趋势</b>：①派发→②恐慌→③绝望"}, {"type": "knowledge", "title": "✅ 指数互相验证", "content": "道氏理论强调：工业指数和运输指数的走势必须互相验证。一个指数创新高而另一个未确认，则趋势可能不稳固。对应A股：上证综指和深证成指需配合验证。"}], "quiz": [{"q": "道氏理论将趋势分为几种？", "a": ["1种", "2种", "3种", "5种"], "correct": 2}, {"q": "道氏理论的核心假设不包括以下哪项？", "a": ["市场行为包容一切", "市场呈趋势运行", "消息决定价格", "历史会重演"], "correct": 2}, {"q": "上升趋势的第三阶段通常是什么？", "a": ["累积阶段", "参与阶段", "派发阶段", "绝望阶段"], "correct": 2}, {"q": "主要趋势通常持续多长时间？", "a": ["几天", "几周", "1年以上", "几小时"], "correct": 2}, {"q": "道氏理论是谁提出的？", "a": ["艾略特", "江恩", "查尔斯·道", "巴菲特"], "correct": 2}]}, {"id": 5, "title": "艾略特波浪理论", "subtitle": "Ralph Elliott · 自然法则", "icon": "🌊", "sections": [{"type": "story", "title": "📖 从病床上看到的规律", "content": "1930年代，重病卧床的会计师艾略特在研究了75年的股市数据后，发现市场价格以可识别的波浪形态运动。他提出：市场遵循5浪前进+3浪后退的规律，这源自大自然的斐波那契数列。"}, {"type": "knowledge", "title": "🌊 5+3=8浪结构", "content": "<b>推动浪（5浪）</b>：1浪（启动）、2浪（回调）、3浪（主升，通常最长最猛）、4浪（盘整）、5浪（冲顶）<br><b>调整浪（3浪）</b>：A浪（下跌）、B浪（反弹诱多）、C浪（主跌）", "canvas": "elliott_wave"}, {"type": "knowledge", "title": "🔢 斐波那契回调位", "content": "波浪回调的常见比例为：<br><b>0.382</b>（浅回调，趋势强）<br><b>0.500</b>（正常回调）<br><b>0.618</b>（黄金分割，最深回调）<br>实战中在0.382和0.618之间寻找入场点。"}, {"type": "knowledge", "title": "⚠️ 波浪理论的局限", "content": "波浪的级别识别主观性强，\"千人千浪\"是常态。建议：<br>① 结合其他指标验证<br>② 不要过度细分波浪<br>③ 只在明显趋势中使用<br>④ 错了及时认错，不执念于\"数浪\""}], "quiz": [{"q": "艾略特波浪理论中，完整的周期由几浪组成？", "a": ["3浪", "5浪", "8浪", "13浪"], "correct": 2}, {"q": "推动浪中通常最长、最猛的一浪是？", "a": ["第1浪", "第2浪", "第3浪", "第5浪"], "correct": 2}, {"q": "斐波那契回调位不包括以下哪个？", "a": ["0.382", "0.500", "0.618", "0.750"], "correct": 3}, {"q": "波浪理论最大的局限是什么？", "a": ["计算太复杂", "千人千浪主观性强", "只适合美股", "没有局限"], "correct": 1}, {"q": "调整浪A-B-C中，哪一浪最容易诱多？", "a": ["A浪", "B浪", "C浪", "都一样"], "correct": 1}]}, {"id": 6, "title": "威科夫方法", "subtitle": "Richard Wyckoff · 聪明钱的足迹", "icon": "🔍", "sections": [{"type": "story", "title": "📖 向华尔街传奇学习", "content": "20世纪初，理查德·威科夫通过观察\"市场操纵者\"的行为，总结出一套分析方法。他的核心观点：价格由供需决定，而最大的供需方是\"聪明钱\"——跟着他们的脚印走，而不是跟着散户情绪跑。"}, {"type": "knowledge", "title": "🔄 市场周期四阶段", "content": "① <b>吸筹</b>：价格低位横盘，成交量萎缩后突然放大<br>② <b>上涨</b>：突破吸筹区上沿，量价配合上涨<br>③ <b>派发</b>：高位横盘，成交量放大但价格不涨<br>④ <b>下跌</b>：跌破派发区下沿"}, {"type": "knowledge", "title": "🧠 聪明钱 vs 散户", "content": "<b>聪明钱</b>：低位吸筹、高位派发，常与大众方向相反<br><b>散户</b>：底部恐慌卖出、顶部贪婪追高<br><b>威科夫法则</b>：散户恐慌时买，散户贪婪时卖"}, {"type": "knowledge", "title": "⚖️ 供需分析", "content": "<b>弹簧效应</b>：价格短暂跌破支撑后迅速收回→强烈买入信号<br><b>终极震仓</b>：主力在拉升前最后一跌，吓出最后的散户<br><b>量价验证</b>：上涨必须有量配合，无量上涨=假突破"}, {"type": "knowledge", "title": "📈 威科夫九段检验法", "content": "1.判断大盘趋势→2.选强势板块→3.选板块龙头→4.判断个股处于哪个阶段→5.分析供需→6.看成交量→7.等待买入点→8.设止损→9.跟踪持仓"}], "quiz": [{"q": "威科夫方法中，\"聪明钱\"通常在哪个阶段买入？", "a": ["上涨阶段", "派发阶段", "吸筹阶段", "下跌阶段"], "correct": 2}, {"q": "\"弹簧效应\"是指什么？", "a": ["价格突破阻力", "短暂跌破支撑后迅速收回", "成交量萎缩", "没有这个效应"], "correct": 1}, {"q": "威科夫认为价格由什么决定？", "a": ["消息面", "技术指标", "供需", "政策"], "correct": 2}, {"q": "派发阶段的典型特征是什么？", "a": ["价跌量缩", "价平量大", "价涨量增", "没有特征"], "correct": 1}, {"q": "\"终极震仓\"发生在哪个阶段？", "a": ["吸筹末期", "上涨中期", "派发中期", "下跌中期"], "correct": 0}]}, {"id": 7, "title": "海龟交易法则", "subtitle": "Richard Dennis · 系统化交易", "icon": "🐢", "sections": [{"type": "story", "title": "📖 史上最伟大的交易实验", "content": "1983年，传奇交易员理查德·丹尼斯和他的搭档打了一个赌：交易能力是天生的还是可以培养的？丹尼斯从各行各业招募了23个人，用两周教会他们一套交易系统，然后给他们真金白银去交易。这批\"海龟\"在4年内赚了超过1亿美元！"}, {"type": "knowledge", "title": "📈 入场规则", "content": "<b>系统一</b>（短期）：价格突破<b class='gold'>20日最高点</b>买入；跌破<b class='gold'>10日最低点</b>卖出<br><b>系统二</b>（长期）：突破<b class='gold'>55日最高点</b>买入；跌破<b class='gold'>20日最低点</b>卖出"}, {"type": "knowledge", "title": "🛡️ ATR止损（2N原则）", "content": "<b>N值</b>=ATR(20)，即20日真实波幅均值<br><b>止损位</b>=入场价 - 2×N<br>例如：买入价10元，ATR=0.5元，止损=9元<br>核心原则：<b>每笔亏损不超过总资金的2%</b>"}, {"type": "knowledge", "title": "🏗️ 金字塔加仓", "content": "盈利后按N值间隔加仓：<br>第1仓（初始）：价格突破入场<br>第2仓：入场价+0.5N<br>第3仓：入场价+1N<br>第4仓（最多）：入场价+1.5N<br>⚠️总仓位不超过4个单位"}, {"type": "knowledge", "title": "💡 海龟法则的灵魂", "content": "① <b>系统化</b>：规则明确，不靠感觉<br>② <b>纪律</b>：严格止损，盈亏同源<br>③ <b>趋势跟踪</b>：不预测，只跟随<br>④ <b>资金管理</b>：绝不在一笔交易中押上所有筹码"}], "quiz": [{"q": "海龟交易法则的核心交易理念是什么？", "a": ["预测顶底", "趋势跟踪", "抄底逃顶", "日内短线"], "correct": 1}, {"q": "海龟法则用2N止损，这里的N代表什么？", "a": ["交易次数", "ATR(20)", "资金量", "天数"], "correct": 1}, {"q": "海龟法则最多允许持有几个加仓单位？", "a": ["2个", "3个", "4个", "没有限制"], "correct": 2}, {"q": "海龟交易员来自什么背景？", "a": ["华尔街精英", "各行各业普通人", "数学家", "程序员"], "correct": 1}, {"q": "海龟法则中，短期系统的入场信号是突破几日高点？", "a": ["10日", "20日", "55日", "100日"], "correct": 1}]}, {"id": 8, "title": "交易心理学", "subtitle": "心态·纪律·利弗莫尔哲学", "icon": "🧠", "sections": [{"type": "story", "title": "📖 利弗莫尔：从5美元到1亿", "content": "杰西·利弗莫尔14岁开始交易，一生四起四落。他最著名的一句话：\"华尔街没有新鲜事，因为人性永不改变。\"他的经历告诉我们：技术再好，心态崩了，一切归零。"}, {"type": "knowledge", "title": "😱 恐惧与贪婪", "content": "<b>恐惧</b>：底部时不敢买（怕继续跌），赚了一点就跑（怕利润回吐）<br><b>贪婪</b>：顶部时想赚更多，亏损时不愿止损（幻想反弹）<br><b>解药</b>：用规则代替情绪——<b class='gold'>计划你的交易，交易你的计划</b>"}, {"type": "knowledge", "title": "🛑 止损纪律", "content": "利弗莫尔说：<b>\"截断亏损，让利润奔跑。\"</b><br>① 每笔交易设好止损再入场<br>② 亏损超过总资金2%无条件离场<br>③ 止损后不要立即报复性交易<br>④ 连续3笔亏损→停止交易1天"}, {"type": "knowledge", "title": "📦 仓位管理", "content": "<b>凯利公式</b>：f=(bp-q)/b（b=盈亏比，p=胜率，q=1-p）<br><b>实战简化</b>：单笔风险≤总资金2%<br>总仓位≤50%（留子弹应对意外）<br>同板块仓位≤20%（防踩雷）"}, {"type": "knowledge", "title": "🚫 常见心理陷阱", "content": "❌ <b>锚定效应</b>：死盯买入价，\"回本就卖\"<br>❌ <b>确认偏误</b>：只看支持自己观点的信息<br>❌ <b>报复交易</b>：止损后立即反向操作<br>❌ <b>过度交易</b>：手里有钱就手痒<br>❌ <b>后悔厌恶</b>：错过行情后追高"}, {"type": "knowledge", "title": "✅ 利弗莫尔交易守则", "content": "1. 不要试图预测市场——跟随市场<br>2. 市场永远是对的<br>3. \"市场在某种程度上是对的时候，你才能赚大钱\"<br>4. 赚大钱不是靠选股，是靠坐得住<br>5. \"我赚大钱从来不是靠思考，是靠坐着不动\"<br>6. 亏损头寸不要加仓——\"不要试图摊平亏损\""}], "quiz": [{"q": "利弗莫尔的核心交易哲学是？", "a": ["短线快进快出", "截断亏损让利润奔跑", "分散投资", "价值投资"], "correct": 1}, {"q": "连续亏损几笔后应该停止交易？", "a": ["1笔", "2笔", "3笔", "不需要停"], "correct": 2}, {"q": "\"锚定效应\"在交易中表现为？", "a": ["只关注技术指标", "死盯买入价", "忘记止损", "频繁交易"], "correct": 1}, {"q": "单笔交易风险建议不超过总资金的？", "a": ["1%", "2%", "5%", "10%"], "correct": 1}, {"q": "\"计划你的交易，交易你的计划\"的核心是什么？", "a": ["快速反应", "用规则代替情绪", "随机应变", "听消息操作"], "correct": 1}]}, {"id": 9, "title": "A股实战要点", "subtitle": "规则·制度·中国特色", "icon": "🇨🇳", "sections": [{"type": "knowledge", "title": "⏰ 集合竞价", "content": "<b>9:15-9:20</b>：可申报可撤单（试盘阶段，注意虚假挂单）<br><b>9:20-9:25</b>：可申报不可撤单（真实意图）<br><b>9:25-9:30</b>：开盘前5分钟，不可操作<br>📌 关键：9:20后还在的大量买单才是真买"}, {"type": "knowledge", "title": "📊 涨跌停板", "content": "主板±<b>10%</b>、创业板/科创板±<b>20%</b>、北交所±<b>30%</b>、ST/*ST ±<b>5%</b><br><b>一字涨停</b>：开盘即涨停，全天无成交→次日大概率高开<br><b>一字跌停</b>：开盘即跌停→不要抄底，等放量"}, {"type": "knowledge", "title": "📅 T+1交割制度", "content": "<b>T日买入</b>→T+1日才能卖出<br>资金：卖出后实时到账（可用），T+1日可取出<br><b>影响</b>：当天涨了不能卖→追高需谨慎；当天跌了不能跑→止损要提前"}, {"type": "knowledge", "title": "🐉 龙虎榜解读", "content": "每日涨跌幅偏离值达±7%的前5名会登龙虎榜。<br><b>看什么</b>：<br>① 买入/卖出前5席位（机构 vs 游资）<br>② 买卖净额（净买=看多）<br>③ 是否有\"藏獒\"席位（知名游资）<br>④ 机构专用席位大量买入=中期看好"}, {"type": "knowledge", "title": "💰 北向资金", "content": "通过沪港通/深港通进入A股的境外资金。<br><b>持续净流入</b>→外资看好A股，中期利多<br><b>持续净流出</b>→外资撤退，注意风险<br>📌 单日百亿以上净流入/流出值得高度关注"}, {"type": "knowledge", "title": "🏢 融资融券", "content": "<b>融资</b>（做多）：借券商的钱买股票→牛市助推器<br><b>融券</b>（做空）：借股票卖出后买回还→熊市助推器<br><b>融资余额</b>持续增加→市场偏乐观；余额骤降→恐慌出逃"}], "quiz": [{"q": "A股主板股票的涨跌停幅度是多少？", "a": ["±5%", "±10%", "±20%", "没有限制"], "correct": 1}, {"q": "集合竞价中，哪个时段不能撤单？", "a": ["9:15-9:20", "9:20-9:25", "9:25-9:30", "全天可撤"], "correct": 1}, {"q": "T+1制度下，今天买入的股票最早哪天能卖？", "a": ["今天", "明天", "后天", "下周一"], "correct": 1}, {"q": "龙虎榜中\"机构专用\"席位大量买入说明什么？", "a": ["短期炒作", "中期看好", "利空信号", "没有含义"], "correct": 1}, {"q": "北向资金持续净流入通常意味着什么？", "a": ["外资看空", "外资看好", "市场见顶", "与A股无关"], "correct": 1}]}, {"id": 10, "title": "综合实战策略", "subtitle": "CAN SLIM·三重滤网·共振分析", "icon": "🎯", "sections": [{"type": "story", "title": "📖 欧奈尔：从散户到传奇", "content": "威廉·欧奈尔30岁创立《投资者商业日报》，他总结的CAN SLIM选股法集基本面和技术面之大成，创造了美国投资大赛史上最高年收益率记录。"}, {"type": "knowledge", "title": "🎯 CAN SLIM选股法", "content": "<b>C</b>=Current Earnings（当季盈利增长≥25%）<br><b>A</b>=Annual Earnings（年度盈利增长≥25%）<br><b>N</b>=New（新产品/新管理层/新高）<br><b>S</b>=Supply&Demand（流通盘小+成交量放大）<br><b>L</b>=Leader（买龙头不买跟风）<br><b>I</b>=Institutional（机构持仓增加）<br><b>M</b>=Market（大盘方向：顺势而为）"}, {"type": "knowledge", "title": "🔱 三重滤网交易系统", "content": "亚历山大·埃尔德设计：<br><b>第一层</b>（大周期，如周线）：判断趋势方向→用MACD柱状图<br><b>第二层</b>（中周期，如日线）：在回调中找入场点→用RSI/KDJ超卖<br><b>第三层</b>（小周期）：精确入场→突破确认"}, {"type": "knowledge", "title": "🔄 多周期共振", "content": "<b>核心逻辑</b>：多个时间周期的信号同时指向同一方向时，胜率最高。<br>例如：周线MACD金叉 + 日线突破20日均线 + 60分钟RSI回调到位→三重共振，高胜率入场。"}, {"type": "knowledge", "title": "📋 完整交易流程", "content": "1️⃣ 大盘判断（道氏+均线定方向）<br>2️⃣ 板块选择（北向资金+涨幅榜）<br>3️⃣ 个股筛选（CAN SLIM+技术指标）<br>4️⃣ 多周期共振确认<br>5️⃣ 计算仓位（海龟法则2N止损反推）<br>6️⃣ 设止损入场<br>7️⃣ 移动止盈（ATR跟踪）<br>8️⃣ 复盘总结"}, {"type": "knowledge", "title": "💎 送给初学者的忠告", "content": "① <b>保住本金</b>是第一位的——巴菲特的铁律<br>② 先用模拟盘至少3个月<br>③ 找到适合自己的方法，不要东学西学<br>④ 交易日记是成长最快的方式<br>⑤ 承认亏损是交易的一部分<br>⑥ 不要负债炒股<br>⑦ 慢就是快——年化20%足以成为顶级交易员"}], "quiz": [{"q": "CAN SLIM中字母C代表什么？", "a": ["技术面", "当季盈利增长", "市值", "分红"], "correct": 1}, {"q": "三重滤网系统的第一层用什么周期？", "a": ["分钟图", "日线", "周线（大周期）", "秒级"], "correct": 2}, {"q": "多周期共振的核心优势是什么？", "a": ["交易更快", "胜率更高", "不用止损", "适合短线"], "correct": 1}, {"q": "巴菲特最重要的投资铁律是什么？", "a": ["分散投资", "保住本金", "追涨杀跌", "频繁交易"], "correct": 1}, {"q": "对于初学者，建议先用模拟盘多少时间？", "a": ["1周", "1个月", "至少3个月", "不需要"], "correct": 2}]}]
+</script>
+
+<script>
+var courses_data = JSON.parse(document.getElementById('courses-data').textContent);
+
+// 全局状态
+var state = {
+  completedChapters: [],
+  unlockedChapter: 1,
+  currentTab: 'learn',
+  currentChapter: null,
+  quizResults: {},
+  totalScore: 0,
+  totalAnswered: 0
+};
+
+// 初始化
+function init() {
+  loadState();
+  document.getElementById('loading').style.display = 'none';
+  switchTab('learn');
+  renderChapterList();
+  renderQuickRef();
+  renderMyPage();
+  updateProgress();
+}
+
+// localStorage安全读写
+function loadState() {
+  try {
+    var raw = localStorage.getItem('stockkline_state');
+    if (raw) {
+      var saved = JSON.parse(raw);
+      if (saved.completedChapters) state.completedChapters = saved.completedChapters;
+      if (saved.unlockedChapter) state.unlockedChapter = saved.unlockedChapter;
+      if (saved.quizResults) state.quizResults = saved.quizResults;
+      if (saved.totalScore !== undefined) state.totalScore = saved.totalScore;
+      if (saved.totalAnswered !== undefined) state.totalAnswered = saved.totalAnswered;
+    }
+  } catch(e) {}
+}
+
+function saveState() {
+  try {
+    localStorage.setItem('stockkline_state', JSON.stringify({
+      completedChapters: state.completedChapters,
+      unlockedChapter: state.unlockedChapter,
+      quizResults: state.quizResults,
+      totalScore: state.totalScore,
+      totalAnswered: state.totalAnswered
+    }));
+  } catch(e) {}
+}
+
+// Tab切换
+function switchTab(tab) {
+  state.currentTab = tab;
+  var contents = document.querySelectorAll('.tab-content');
+  for (var i = 0; i < contents.length; i++) contents[i].classList.remove('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  var btns = document.querySelectorAll('.tab-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+  document.getElementById('btn-' + tab).classList.add('active');
+  state.currentChapter = null;
+}
+
+// 进度更新
+function updateProgress() {
+  var pct = state.completedChapters.length > 0 ? Math.round(state.completedChapters.length / courses_data.length * 100) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = state.completedChapters.length + '/' + courses_data.length + ' (' + pct + '%)';
+}
+
+function showToast(msg) {
+  var t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function() { t.remove(); }, 1600);
+}
+
+// ========== 学习Tab ==========
+function renderChapterList() {
+  var html = '';
+  for (var i = 0; i < courses_data.length; i++) {
+    var ch = courses_data[i];
+    var locked = (ch.id > state.unlockedChapter);
+    var completed = state.completedChapters.indexOf(ch.id) !== -1;
+    html += '<div class="chapter-card' + (locked ? ' locked' : '') + '" onclick="' + (locked ? '' : 'openChapter(' + ch.id + ')') + '">';
+    html += '<div class="ch-num">第' + ch.id + '章 ' + (locked ? '🔒' : (completed ? '✅' : ch.icon)) + '</div>';
+    html += '<div class="ch-title">' + ch.title;
+    if (completed) html += '<span class="ch-completed">已完成</span>';
+    html += '</div>';
+    html += '<div class="ch-sub">' + ch.subtitle + '</div>';
+    html += '<div class="ch-meta">📚 ' + ch.sections.length + '个知识点 | ✏️ ' + ch.quiz.length + '道测试</div>';
+    html += '</div>';
+  }
+  document.getElementById('chapter-list').innerHTML = html;
+}
+
+function openChapter(id) {
+  var ch = courses_data[id - 1];
+  state.currentChapter = id;
+  var html = '<div class="reader">';
+
+  // 渲染每个section
+  for (var i = 0; i < ch.sections.length; i++) {
+    var sec = ch.sections[i];
+    html += '<div class="section"><div class="section-title">' + sec.title + '</div>';
+    html += '<div class="section-content">' + sec.content + '</div>';
+
+    // Canvas图表
+    if (sec.canvas) {
+      html += '<canvas id="canvas-' + sec.canvas + '" width="360" height="200"></canvas>';
+    }
+
+    html += '</div>';
+  }
+
+  // 测验区
+  html += '<div class="quiz-wrap"><h3>📝 章节测验</h3>';
+  html += '<div id="quiz-questions">';
+  for (var j = 0; j < ch.quiz.length; j++) {
+    var q = ch.quiz[j];
+    html += '<div class="quiz-q"><div class="q-text">' + (j + 1) + '. ' + q.q + '</div>';
+    for (var k = 0; k < q.a.length; k++) {
+      html += '<button class="q-opt" onclick="answerQuiz(' + id + ',' + j + ',' + k + ',this)">' + q.a[k] + '</button>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+  html += '<div id="quiz-result-' + id + '"></div>';
+
+  // 按钮
+  html += '<div class="btn-row">';
+  html += '<button class="btn-back" onclick="switchTab(\'learn\');renderChapterList()">← 返回列表</button>';
+  if (id > 1) {
+    html += '<button class="btn-secondary" onclick="openChapter(' + (id - 1) + ')">上一章</button>';
+  }
+  if (id < courses_data.length) {
+    html += '<button class="btn-primary" id="btn-next-' + id + '" onclick="nextChapter()" disabled>下一章 →</button>';
+  }
+  html += '</div></div>';
+
+  document.getElementById('tab-learn').innerHTML = html;
+  document.getElementById('tab-learn').classList.add('active');
+  document.getElementById('tab-quick').classList.remove('active');
+
+  // 延迟画Canvas
+  setTimeout(function() {
+    drawCanvasesForChapter(id);
+  }, 200);
+
+  // 恢复之前测验结果
+  if (state.quizResults[id]) {
+    markQuizAnswers(id);
+  }
+}
+
+// 测验答题
+function answerQuiz(chId, qIdx, optIdx, btn) {
+  var ch = courses_data[chId - 1];
+  var q = ch.quiz[qIdx];
+  var correct = q.correct;
+
+  // 禁用该题所有选项
+  var parent = btn.parentElement;
+  var opts = parent.querySelectorAll('.q-opt');
+  for (var i = 0; i < opts.length; i++) {
+    opts[i].disabled = true;
+    if (i === correct) opts[i].classList.add('correct');
+    if (i === optIdx && i !== correct) opts[i].classList.add('wrong');
+  }
+
+  // 记录结果
+  if (!state.quizResults[chId]) state.quizResults[chId] = {};
+  var isCorrect = (optIdx === correct);
+  state.quizResults[chId][qIdx] = isCorrect;
+  state.totalAnswered++;
+
+  if (isCorrect) {
+    state.totalScore++;
+    showToast('✅ 正确！');
+  } else {
+    showToast('❌ 正确答案是：' + q.a[correct]);
+  }
+
+  saveState();
+
+  // 检查是否全部答完
+  checkChapterCompletion(chId);
+}
+
+function markQuizAnswers(chId) {
+  var results = state.quizResults[chId];
+  if (!results) return;
+  var ch = courses_data[chId - 1];
+  for (var qIdx in results) {
+    if (results.hasOwnProperty(qIdx)) {
+      var correct = ch.quiz[parseInt(qIdx)].correct;
+      var qDiv = document.querySelectorAll('#quiz-questions .quiz-q')[parseInt(qIdx)];
+      if (qDiv) {
+        var opts = qDiv.querySelectorAll('.q-opt');
+        for (var i = 0; i < opts.length; i++) {
+          opts[i].disabled = true;
+          if (i === correct) opts[i].classList.add('correct');
+        }
+        if (!results[qIdx]) {
+          // 找用户选错的
+          opts[parseInt(Object.keys(results).find(function(k){return results[k]===false && parseInt(k)===parseInt(qIdx)}))].classList.add('wrong');
+        }
+      }
+    }
+  }
+}
+
+function checkChapterCompletion(chId) {
+  var ch = courses_data[chId - 1];
+  var results = state.quizResults[chId] || {};
+  var allAnswered = Object.keys(results).length >= ch.quiz.length;
+
+  if (allAnswered) {
+    var total = ch.quiz.length;
+    var score = 0;
+    for (var k in results) { if (results[k]) score++; }
+    var passScore = Math.ceil(total * 0.6); // 60%通过
+
+    var resultDiv = document.getElementById('quiz-result-' + chId);
+    if (score >= passScore) {
+      resultDiv.innerHTML = '<div class="quiz-result" style="background:rgba(76,175,132,0.15)">🎉 恭喜通过！得分：' + score + '/' + total;
+      if (state.completedChapters.indexOf(chId) === -1) {
+        state.completedChapters.push(chId);
+        if (chId >= state.unlockedChapter) {
+          state.unlockedChapter = chId + 1;
+        }
+        saveState();
+        updateProgress();
+      }
+      var nextBtn = document.getElementById('btn-next-' + chId);
+      if (nextBtn) nextBtn.disabled = false;
+    } else {
+      resultDiv.innerHTML = '<div class="quiz-result" style="background:rgba(224,85,90,0.15)">📚 得分：' + score + '/' + total + '，需' + passScore + '分通过，请检查错题重新作答</div>';
+      // 允许重做
+      delete state.quizResults[chId];
+      saveState();
+      setTimeout(function() { openChapter(chId); }, 1500);
+    }
+  }
+}
+
+function nextChapter() {
+  var nextId = state.currentChapter + 1;
+  if (nextId <= courses_data.length) {
+    openChapter(nextId);
+  }
+}
+
+// ========== Canvas绘图 ==========
+function drawCanvasesForChapter(chId) {
+  var ch = courses_data[chId - 1];
+  for (var i = 0; i < ch.sections.length; i++) {
+    var sec = ch.sections[i];
+    if (!sec.canvas) continue;
+    var canvas = document.getElementById('canvas-' + sec.canvas);
+    if (!canvas) continue;
+    var ctx = canvas.getContext('2d');
+    var w = canvas.width || 360;
+    var h = canvas.height || 200;
+    // fallback尺寸
+    if (w < 10) w = 360;
+    if (h < 10) h = 200;
+
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#0a1628';
+    ctx.fillRect(0, 0, w, h);
+
+    // 根据类型调用不同绘图函数
+    if (sec.canvas === 'single_kline') drawSingleKline(ctx, w, h);
+    else if (sec.canvas === 'yang_yin') drawYangYin(ctx, w, h);
+    else if (sec.canvas === 'hammer') drawHammer(ctx, w, h);
+    else if (sec.canvas === 'engulfing') drawEngulfing(ctx, w, h);
+    else if (sec.canvas === 'ma_cross') drawMACross(ctx, w, h);
+    else if (sec.canvas === 'macd') drawMACD(ctx, w, h);
+    else if (sec.canvas === 'rsi') drawRSI(ctx, w, h);
+    else if (sec.canvas === 'bollinger') drawBollinger(ctx, w, h);
+    else if (sec.canvas === 'elliott_wave') drawElliott(ctx, w, h);
+    else genericKlineCanvas(ctx, w, h, sec.canvas);
+  }
+}
+
+// 工具函数
+function drawGrid(ctx, w, h) {
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 0.5;
+  for (var y = 0; y < h; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+  for (var x = 0; x < w; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+}
+
+function drawCandle(ctx, x, open, close, high, low, bodyW) {
+  var isGreen = close > open;
+  ctx.strokeStyle = isGreen ? '#4caf84' : '#e0555a';
+  ctx.fillStyle = isGreen ? '#4caf84' : '#e0555a';
+  // 影线
+  ctx.beginPath();
+  ctx.moveTo(x, high);
+  ctx.lineTo(x, low);
+  ctx.stroke();
+  // 实体
+  var topY = Math.min(open, close);
+  var botY = Math.max(open, close);
+  var bodyH = botY - topY;
+  if (bodyH < 1) bodyH = 1;
+  ctx.fillStyle = isGreen ? 'rgba(76,175,132,0.85)' : 'rgba(224,85,90,0.85)';
+  ctx.fillRect(x - bodyW/2, topY, bodyW, bodyH);
+}
+
+// 单根K线示意
+function drawSingleKline(ctx, w, h) {
+  drawGrid(ctx, w, h);
+  var cx = w/2, oh = 50, cl = 90, hi = 30, lo = 140;
+  drawCandle(ctx, cx, oh, cl, hi, lo, 20);
+
+  // 标注
+  ctx.fillStyle = '#d4a843';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('最高价', cx, hi - 8);
+  ctx.fillText('收盘价', cx + 50, cl - 5);
+  ctx.fillText('开盘价', cx + 50, oh + 12);
+  ctx.fillText('最低价', cx, lo + 18);
+
+  // 虚线标注
+  ctx.strokeStyle = 'rgba(212,168,67,0.4)';
+  ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(cx, hi); ctx.lineTo(cx + 60, hi); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, lo); ctx.lineTo(cx + 60, lo); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#4caf84';
+  ctx.font = '12px sans-serif';
+  ctx.fillText('阳线（收盘>开盘）', cx, h - 10);
+}
+
+// 阳线阴线对比
+function drawYangYin(ctx, w, h) {
+  drawGrid(ctx, w, h);
+  // 阳线
+  drawCandle(ctx, w/3, 60, 100, 30, 140, 20);
+  ctx.fillStyle = '#4caf84';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('阳线', w/3, h - 10);
+
+  // 阴线
+  drawCandle(ctx, w*2/3, 100, 60, 140, 30, 20);
+  ctx.fillStyle = '#e0555a';
+  ctx.fillText('阴线', w*2/3, h - 10);
+
+  ctx.fillStyle = '#d4a843';
+  ctx.font = '13px sans-serif';
+  ctx.fillText('收盘价 ＞ 开盘价', w/3, 20);
+  ctx.fillText('收盘价 ＜ 开盘价', w*2/3, 20);
+}
+
+// 锤子线
+function drawHammer(ctx, w, h) {
+  drawGrid(ctx, w, h);
+  // 三根下跌阴线
+  for (var i = 0; i < 3; i++) {
+    drawCandle(ctx, 80 + i*60, 100 + i*10, 70 + i*10, 120 + i*10, 50 + i*10, 14);
+  }
+  // 锤子线
+  drawCandle(ctx, 260, 60, 68, 45, 140, 14);
+  // 箭头
+  ctx.fillStyle = '#d4a843';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('下跌趋势', 140, 25);
+  ctx.fillText('锤子线反转！', 260, 35);
+  ctx.strokeStyle = '#d4a843';
+  ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(260, 140); ctx.lineTo(260, 170); ctx.stroke();
+  ctx.fillText('长下影线=支撑', 260, 185);
+  ctx.setLineDash([]);
+}
+
+// 吞没形态
+function drawEngulfing(ctx, w, h) {
+  drawGrid(ctx, w, h);
+  // 阴线（小）
+  drawCandle(ctx, 130, 90, 65, 110, 45, 14);
+  ctx.fillStyle = '#e0555a';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('阴线', 130, 35);
+
+  // 阳线（大，吞没）
+  drawCandle(ctx, 210, 55, 110, 40, 120, 14);
+  ctx.fillStyle = '#4caf84';
+  ctx.fillText('阳线（吞没）', 210, 30);
+
+  // 虚线框标注吞没范围
+  ctx.strokeStyle = 'rgba(212,168,67,0.5)';
+  ctx.setLineDash([4,4]);
+  ctx.beginPath();
+  ctx.rect(100, 40, 130, 90);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#d4a843';
+  ctx.font = '12px sans-serif';
+  ctx.fillText('← 完全吞没 →', 165, 170);
+}
+
+// MA金叉死叉
+function drawMACross(ctx, w, h) {
+  drawGrid(ctx, w, h);
+  var pts5 = [[30,140],[80,130],[130,115],[180,95],[230,70],[280,60],[330,55]];
+  var pts20 = [[30,150],[80,135],[130,125],[180,120],[230,105],[280,90],[330,80]];
+
+  // 画MA20
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(pts20[0][0], pts20[0][1]);
+  for (var i=1;i<pts20.length;i++) ctx.lineTo(pts20[i][0], pts20[i][1]);
+  ctx.stroke();
+
+  // 画MA5
+  ctx.strokeStyle = '#d4a843';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(pts5[0][0], pts5[0][1]);
+  for (var i=1;i<pts5.length;i++) ctx.lineTo(pts5[i][0], pts5[i][1]);
+  ctx.stroke();
+
+  // 标注
+  ctx.fillStyle = '#d4a843';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('MA5', 60, 125);
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.fillText('MA20', 60, 145);
+
+  // 金叉标注
+  ctx.fillStyle = '#4caf84';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.fillText('金叉买入!', 200, 70);
+  ctx.strokeStyle = '#4caf84';
+  ctx.setLineDash([2,2]);
+  ctx.beginPath();
+  ctx.arc(180, 105, 20, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+// MACD
+function drawMACD(ctx, w, h) {
+  drawGrid(ctx, w, h);
+  // DIF和DEA
+  ctx.strokeStyle = '#d4a843';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(30,100);ctx.lineTo(80,90);ctx.lineTo(130,75);ctx.lineTo(180,65);ctx.lineTo(230,70);ctx.lineTo(280,60);ctx.lineTo(330,55);
+  ctx.stroke();
+  ctx.fillStyle = '#d4a843';
+  ctx.font = '11px sans-serif';
+  ctx.fillText('DIF', 340, 55);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(30,105);ctx.lineTo(80,100);ctx.lineTo(130,90);ctx.lineTo(180,85);ctx.lineTo(230,78);ctx.lineTo(280,70);ctx.lineTo(330,65);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.fillText('DEA', 340, 65);
+
+  // 柱状图
+  for (var i=0;i<7;i++) {
+    var bx = 50 + i*45, bh = Math.abs(30 - i*5);
+    ctx.fillStyle = i < 4 ? '#4caf84' : '#e0555a';
+    ctx.fillRect(bx-4, 120, 8, bh);
+  }
+
+  ctx.fillStyle = '#d4a843';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('柱状图（量能）', 180, 165);
+}
+
+// RSI
+function drawRSI(ctx, w, h) {
+  drawGrid(ctx, w, h);
+  // 超买线
+  ctx.strokeStyle = '#e0555a';
+  ctx.setLineDash([5,3]);
+  ctx.beginPath(); ctx.moveTo(0, 50); ctx.lineTo(w, 50); ctx.stroke();
+  ctx.fillStyle = '#e0555a';
+  ctx.font = '11px sans-serif';
+  ctx.fillText('超买线 70', 10, 45);
+
+  // 超卖线
+  ctx.strokeStyle = '#4caf84';
+  ctx.beginPath(); ctx.moveTo(0, 130); ctx.lineTo(w, 130); ctx.stroke();
+  ctx.fillStyle = '#4caf84';
+  ctx.fillText('超卖线 30', 10, 145);
+  ctx.setLineDash([]);
+
+  // RSI曲线
+  ctx.strokeStyle = '#d4a843';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(30,100);ctx.lineTo(80,70);ctx.lineTo(130,45);ctx.lineTo(180,55);ctx.lineTo(230,85);ctx.lineTo(280,110);ctx.lineTo(330,120);
+  ctx.stroke();
+
+  ctx.fillStyle = '#d4a843';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('RSI线', 340, 115);
+}
+
+// 布林带
+function drawBollinger(ctx, w, h) {
+  drawGrid(ctx, w, h);
+  var midY = [90,85,80,75,70,72,68];
+  var topY = [70,60,55,50,45,48,42];
+  var botY = [110,110,105,100,95,96,94];
+
+  // 中轨
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(40,midY[0]);
+  for (var i=1;i<7;i++) ctx.lineTo(40+i*45, midY[i]);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.font = '10px sans-serif';
+  ctx.fillText('中轨(MA20)', 280, 72);
+
+  // 上轨
+  ctx.strokeStyle = 'rgba(224,85,90,0.6)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(40,topY[0]);
+  for (var i=1;i<7;i++) ctx.lineTo(40+i*45, topY[i]);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(224,85,90,0.6)';
+  ctx.fillText('上轨(+2σ)', 280, 50);
+
+  // 下轨
+  ctx.strokeStyle = 'rgba(76,175,132,0.6)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(40,botY[0]);
+  for (var i=1;i<7;i++) ctx.lineTo(40+i*45, botY[i]);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(76,175,132,0.6)';
+  ctx.fillText('下轨(-2σ)', 280, 97);
+
+  // 收口标注
+  ctx.fillStyle = '#d4a843';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('收口后开口→大行情启动！', 180, 170);
+}
+
+// 艾略特波浪
+function drawElliott(ctx, w, h) {
+  drawGrid(ctx, w, h);
+  var points = [[30,140],[80,110],[120,125],[170,80],[200,95],[250,45],[280,70],[310,95],[340,85]];
+  ctx.strokeStyle = '#d4a843';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(points[0][0], points[0][1]);
+  for (var i=1;i<points.length;i++) ctx.lineTo(points[i][0], points[i][1]);
+  ctx.stroke();
+
+  // 标注波浪
+  var labels = ['1','2','3','4','5','A','B','C'];
+  ctx.fillStyle = '#4caf84';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(labels[0], 30, 130);
+  ctx.fillText(labels[1], 80, 100);
+  ctx.fillText(labels[2], 170, 70);
+  ctx.fillText(labels[3], 200, 85);
+  ctx.fillText(labels[4], 250, 35);
+
+  ctx.fillStyle = '#e0555a';
+  ctx.fillText(labels[5], 280, 60);
+  ctx.fillText(labels[6], 310, 85);
+  ctx.fillText(labels[7], 340, 75);
+
+  ctx.fillStyle = '#d4a843';
+  ctx.font = '10px sans-serif';
+  ctx.fillText('推动浪（5浪）', 130, 20);
+  ctx.fillStyle = '#e0555a';
+  ctx.fillText('调整浪（3浪）', 300, 165);
+}
+
+// 通用K线模拟图
+function genericKlineCanvas(ctx, w, h, type) {
+  drawGrid(ctx, w, h);
+  for (var i=0;i<6;i++) {
+    var x=50+i*48, o=60+Math.random()*40, c=60+Math.random()*40, hi=Math.min(o,c)-10-Math.random()*20, lo=Math.max(o,c)+10+Math.random()*20;
+    drawCandle(ctx,x,o,c,hi,lo,12);
+  }
+  ctx.fillStyle = '#d4a843';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(type + ' 实战示例', w/2, h-8);
+}
+
+// ========== 速查Tab ==========
+var quickRefData = [
+  {title:'MA均线',def:'过去N日收盘价均值连线',signal:'金叉买/死叉卖；多头排列看涨'},
+  {title:'MACD',def:'快慢均线差值判断趋势强度',signal:'金叉买/死叉卖；背离信号极强'},
+  {title:'RSI',def:'衡量近期涨跌力量比(0-100)',signal:'>70超买卖；<30超卖买；背离'},
+  {title:'KDJ',def:'价格在近期高低区间的位置',signal:'J线拐头最灵敏；>100超买'},
+  {title:'布林带',def:'标准差通道判断极端价格',signal:'收口后开口=大行情；触轨反转'},
+  {title:'成交量',def:'价是表象，量是本质',signal:'放量上涨健康；天量天价顶部'},
+  {title:'锤子线',def:'长下影+小实体',signal:'下跌趋势末端=底部反转'},
+  {title:'吞没形态',def:'后一根实体完全包住前一根',signal:'看涨/看跌反转，成功率65%+'},
+  {title:'三只乌鸦',def:'连续三根实体阴线',signal:'强烈下跌确认，成功率78%'},
+  {title:'金叉/死叉',def:'短期均线上穿/下穿长期均线',signal:'金叉=买；死叉=卖'},
+  {title:'背离',def:'价格与指标方向相反',signal:'顶背离=卖；底背离=买'},
+  {title:'道氏趋势',def:'主要/次级/日间三种趋势',signal:'顺势交易，不与主趋势对抗'},
+  {title:'CAN SLIM',def:'欧奈尔七因子选股法',signal:'基本面+技术面结合'},
+  {title:'2N止损',def:'海龟法则ATR止损法',signal:'止损=入场价-2×ATR(20)'}
+];
+
+function renderQuickRef() {
+  var html = '<div class="quick-search"><input type="text" id="quick-search" placeholder="🔍 搜索指标/形态..." oninput="filterQuickRef()"></div><div id="quick-list">';
+  for (var i = 0; i < quickRefData.length; i++) {
+    var item = quickRefData[i];
+    html += '<div class="quick-card" data-search="' + item.title + ' ' + item.def + ' ' + item.signal + '">';
+    html += '<div class="qk-title">' + item.title + '</div>';
+    html += '<div class="qk-def">' + item.def + '</div>';
+    html += '<div class="qk-signal">📶 信号：' + item.signal + '</div>';
+    html += '</div>';
+  }
+  html += '</div>';
+  document.getElementById('tab-quick').innerHTML = html;
+}
+
+function filterQuickRef() {
+  var query = document.getElementById('quick-search').value.toLowerCase();
+  var cards = document.querySelectorAll('#quick-list .quick-card');
+  for (var i = 0; i < cards.length; i++) {
+    var search = cards[i].getAttribute('data-search').toLowerCase();
+    cards[i].style.display = search.indexOf(query) !== -1 ? '' : 'none';
+  }
+}
+
+// ========== 实战Tab ==========
+var battleScenes = [
+  {
+    kline: [[60,80,40,100],[75,70,60,95],[68,55,50,85],[50,40,35,65],[45,30,25,55],
+            [55,65,30,75],[70,80,55,90],[80,95,65,100],[90,110,75,120],[85,105,75,115],
+            [80,90,70,100],[75,60,65,85],[65,50,55,75],[55,40,45,65],[50,30,35,55]],
+    question: '📈 图中出现经典反转形态，此时应该？',
+    options: ['买入', '卖出', '观望', '加仓'],
+    answer: 0,
+    explain: '✅ 锤子线+阳线确认，底部反转信号明确！'
+  },
+  {
+    kline: [[50,55,40,60],[60,65,50,70],[70,80,55,85],[80,95,65,100],[90,110,75,115],
+            [95,100,80,105],[85,75,70,90],[80,60,65,85],[75,50,55,80],[70,45,50,75],
+            [60,40,45,65],[55,35,40,60],[50,30,35,55]],
+    question: '📉 MACD顶背离+三只乌鸦，此时应该？',
+    options: ['抄底买入', '减仓/离场', '加仓', '观望'],
+    answer: 1,
+    explain: '⚠️ 顶背离+三只乌鸦=强烈下跌信号，及时减仓！'
+  },
+  {
+    kline: [[30,35,20,45],[40,50,30,55],[50,65,40,70],[55,60,45,65],[50,45,40,55],
+            [45,40,35,50],[40,35,30,45],[35,30,25,40],[40,50,25,55],[50,60,35,65],
+            [60,75,45,80],[70,85,55,90],[80,100,65,105],[90,110,75,115],[95,120,80,125]],
+    question: '📊 布林带收口后向上突破，此时应该？',
+    options: ['观望', '卖出', '做空', '买入跟进'],
+    answer: 3,
+    explain: '🚀 布林带收口后开口向上=大行情启动，顺势跟进！'
+  }
+];
+var currentScene = 0;
+
+function renderBattleScene() {
+  if (currentScene >= battleScenes.length) {
+    document.getElementById('tab-battle').innerHTML = '<div class="battle-scene"><h3 style="color:var(--gold)">🎉 全部通关！</h3><p style="color:var(--text);margin:10px">你已经完成了所有实战模拟</p><button class="btn-primary" onclick="currentScene=0;renderBattleScene()">重新开始</button></div>';
+    return;
+  }
+  var scene = battleScenes[currentScene];
+  var html = '<div class="battle-scene">';
+  html += '<h3 style="color:var(--gold)">🎮 实战模拟 #' + (currentScene + 1) + '</h3>';
+  html += '<canvas id="battle-canvas" width="360" height="220"></canvas>';
+  html += '<div class="question">' + scene.question + '</div>';
+  for (var i = 0; i < scene.options.length; i++) {
+    html += '<button class="btn-secondary" onclick="checkBattleAnswer(' + i + ')">' + scene.options[i] + '</button>';
+  }
+  html += '<div id="battle-result"></div>';
+  html += '</div>';
+  document.getElementById('tab-battle').innerHTML = html;
+
+  setTimeout(function() {
+    drawBattleKline();
+  }, 200);
+}
+
+function drawBattleKline() {
+  var canvas = document.getElementById('battle-canvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var w = canvas.width || 360, h = canvas.height || 220;
+  if (w < 10) w = 360; if (h < 10) h = 220;
+
+  ctx.fillStyle = '#0a1628';
+  ctx.fillRect(0, 0, w, h);
+  drawGrid(ctx, w, h);
+
+  var scene = battleScenes[currentScene];
+  var klines = scene.kline;
+  for (var i = 0; i < klines.length; i++) {
+    var k = klines[i], x = 25 + i * 22;
+    var o = h - k[0] - 20, c = h - k[1] - 20;
+    var l = h - k[2] - 20, hi = h - k[3] - 20;
+    drawCandle(ctx, x, o, c, hi, l, 10);
+  }
+
+  ctx.fillStyle = '#d4a843';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('← 历史走势 →', w/2, h-5);
+}
+
+function checkBattleAnswer(idx) {
+  var scene = battleScenes[currentScene];
+  var resultDiv = document.getElementById('battle-result');
+  if (idx === scene.answer) {
+    resultDiv.innerHTML = '<div class="battle-result" style="background:rgba(76,175,132,0.15)">✅ 正确！' + scene.explain + '<br><button class="btn-primary" style="margin-top:8px" onclick="currentScene++;renderBattleScene()">下一关 →</button></div>';
+    state.totalScore++;
+    saveState();
+  } else {
+    resultDiv.innerHTML = '<div class="battle-result" style="background:rgba(224,85,90,0.15)">❌ 错误！' + scene.explain + '<br><button class="btn-secondary" style="margin-top:8px" onclick="renderBattleScene()">再试一次</button></div>';
+  }
+}
+
+// ========== 我的Tab ==========
+function renderMyPage() {
+  var html = '<div class="my-info">';
+  html += '<h3 style="color:var(--gold);text-align:center">📊 学习统计</h3>';
+  html += '<div class="stat-row">';
+  html += '<div class="stat-item"><div class="stat-num">' + state.completedChapters.length + '/10</div><div class="stat-label">章节进度</div></div>';
+  html += '<div class="stat-item"><div class="stat-num">' + state.totalScore + '</div><div class="stat-label">正确答题</div></div>';
+  html += '<div class="stat-item"><div class="stat-num">' + state.totalAnswered + '</div><div class="stat-label">总答题数</div></div>';
+  html += '</div>';
+  html += '<button onclick="switchTab(\'quick\')">📖 技术指标速查</button>';
+  html += '<button onclick="switchTab(\'battle\');renderBattleScene()">🎮 实战模拟演练</button>';
+  html += '<button onclick="resetAll()">🔄 重置学习进度</button>';
+  html += '<p style="color:#667788;font-size:11px;text-align:center;margin-top:16px">StockKlineMaster v1.0<br>K线学习助手 · 纯离线版</p>';
+  html += '</div>';
+  document.getElementById('tab-my').innerHTML = html;
+}
+
+function resetAll() {
+  if (confirm('确定要重置所有学习进度吗？此操作不可恢复！')) {
+    state.completedChapters = [];
+    state.unlockedChapter = 1;
+    state.quizResults = {};
+    state.totalScore = 0;
+    state.totalAnswered = 0;
+    saveState();
+    updateProgress();
+    renderChapterList();
+    renderMyPage();
+    showToast('已重置学习进度');
+  }
+}
+
+// 初始化
+document.addEventListener('DOMContentLoaded', init);
+
+</script>
+</body>
+</html>
