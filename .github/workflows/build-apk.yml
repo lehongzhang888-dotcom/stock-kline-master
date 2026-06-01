@@ -5,6 +5,9 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -41,15 +44,8 @@ jobs:
           keyPassword=stock1234
           EOF
 
-      - name: 下载 gradlew
-        run: |
-          curl -sL "https://raw.githubusercontent.com/gradle/gradle/v8.5.0/gradlew" -o gradlew
-          chmod +x gradlew
-          mkdir -p gradle/wrapper
-          curl -sL "https://raw.githubusercontent.com/gradle/gradle/v8.5.0/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
-
       - name: 构建 Release APK
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease --stacktrace
 
       - name: 上传 Release APK
         uses: actions/upload-artifact@v4
