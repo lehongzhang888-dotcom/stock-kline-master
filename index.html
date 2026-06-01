@@ -85,7 +85,15 @@ button:disabled{opacity:0.4;cursor:not-allowed}
 @keyframes fadeInOut{0%{opacity:0;transform:translateX(-50%) translateY(-10px)}20%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0}}
 </style>
 </head>
+<style>@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}</style>
 <body>
+<div id="static-fallback" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:#0a1628;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:20px;text-align:center">
+  <h2 style="color:#d4a843;font-size:24px;margin-bottom:12px">📈 StockKlineMaster</h2>
+  <p style="color:#8899aa;font-size:14px;margin-bottom:16px">K线学习助手 · 加载中...</p>
+  <div style="width:120px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden">
+    <div style="width:60%;height:100%;background:linear-gradient(90deg,#2a5298,#d4a843);border-radius:2px;animation:slide 1.5s ease-in-out infinite"></div>
+  </div>
+</div>
 
 <div id="loading">
   <div class="spinner"></div>
@@ -137,6 +145,7 @@ button:disabled{opacity:0.4;cursor:not-allowed}
 </script>
 
 <script>
+window.onerror=function(m,t,l){var f=document.getElementById('static-fallback');if(f){f.innerHTML='<h2 style="color:#d4a843">📈 StockKlineMaster</h2><p style="color:#e0555a;font-size:14px">加载异常，请尝试：</p><p style="color:#8899aa;font-size:13px">① 完全关闭APP后重新打开<br>② 清除APP缓存<br>③ 重启手机</p><button onclick="location.reload()" style="margin-top:12px;padding:8px 24px;background:#d4a843;color:#0a1628;border:none;border-radius:6px;font-size:14px;font-weight:700">重试</button>';f.style.display='flex'}return!0};
 var courses_data = JSON.parse(document.getElementById('courses-data').textContent);
 
 // 全局状态
@@ -159,6 +168,7 @@ function init() {
   renderQuickRef();
   renderMyPage();
   updateProgress();
+  document.getElementById('static-fallback').style.display = 'none';
 }
 
 // localStorage安全读写
