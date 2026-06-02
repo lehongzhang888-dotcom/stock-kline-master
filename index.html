@@ -1,922 +1,178 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>StockKlineMaster · 炒股K线学习助手</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>KLineMaster · 交易理论大集合</title>
 <style>
+:root{--bg:#0a0e27;--card:#111640;--border:#1e2a4a;--text:#c8d0e0;--gold:#f0c040;--accent:#4da6ff;--green:#34d399;--red:#fb7185;--purple:#a78bfa;--muted:#6b7daa;--dim:#8899bb}
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a1628;--card:#0f1f3d;--gold:#d4a843;--text:#e0e0e0;--accent:#2a5298;--green:#4caf84;--red:#e0555a}
-body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:420px;margin:0 auto;overflow-x:hidden;padding-bottom:70px}
-#loading{position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px}
-#loading .spinner{width:36px;height:36px;border:3px solid var(--accent);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite}
-#loading p{color:var(--gold);font-size:15px}
-@keyframes spin{to{transform:rotate(360deg)}}
-.header{background:linear-gradient(135deg,#0a1628 0%,#1a2a4a 100%);padding:20px 16px 12px;border-bottom:1px solid rgba(212,168,67,0.15)}
-.header h1{font-size:20px;color:var(--gold);text-align:center;margin-bottom:4px}
-.header .sub{font-size:12px;color:#8899aa;text-align:center}
-.progress-wrap{display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--card);margin:0 12px;border-radius:8px;margin-top:8px}
-.progress-bar{flex:1;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:3px;transition:width 0.4s}
-.progress-text{font-size:11px;color:var(--gold);white-space:nowrap}
-.tab-content{display:none;padding:12px}
-.tab-content.active{display:block}
-/* 学习Tab */
-.chapter-card{background:var(--card);border-radius:10px;padding:14px;margin-bottom:10px;border-left:3px solid var(--gold);cursor:pointer;transition:0.2s}
-.chapter-card:hover{transform:translateX(4px);box-shadow:0 2px 12px rgba(212,168,67,0.15)}
-.chapter-card.locked{opacity:0.5;border-left-color:#555;cursor:not-allowed}
-.chapter-card.locked:hover{transform:none;box-shadow:none}
-.chapter-card .ch-num{font-size:11px;color:var(--gold);text-transform:uppercase}
-.chapter-card .ch-title{font-size:17px;font-weight:700;margin:2px 0}
-.chapter-card .ch-sub{font-size:12px;color:#8899aa}
-.chapter-card .ch-meta{display:flex;gap:12px;margin-top:6px;font-size:11px;color:#667788}
-.ch-completed{display:inline-block;background:var(--green);color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;margin-left:8px}
-/* 阅读器 */
-.reader{padding:8px}
-.reader .section{margin-bottom:14px}
-.reader .section-title{font-size:16px;color:var(--gold);margin-bottom:6px;font-weight:700}
-.reader .section-content{font-size:15px;line-height:1.7;color:var(--text);text-align:justify}
-.reader .section-content b{color:var(--gold)}
-.reader .section-content .gold{color:var(--gold);font-weight:700}
-.reader canvas{display:block;margin:8px auto;max-width:100%;border-radius:6px}
-.reader .btn-row{display:flex;gap:8px;margin:14px 0}
-.reader button{padding:10px 18px;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700}
-.btn-primary{background:var(--gold);color:#0a1628}
-.btn-secondary{background:var(--accent);color:#fff}
-.btn-back{background:transparent;color:var(--gold);border:1px solid var(--gold)!important}
-button:disabled{opacity:0.4;cursor:not-allowed}
-/* 测验 */
-.quiz-wrap{padding:8px;margin-top:20px;border-top:2px solid var(--gold)}
-.quiz-wrap h3{color:var(--gold);font-size:16px;margin-bottom:10px}
-.quiz-q{margin-bottom:16px}
-.quiz-q .q-text{font-size:14px;margin-bottom:6px}
-.quiz-q .q-opt{display:block;width:100%;text-align:left;padding:10px 12px;margin:4px 0;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text);font-size:13px;cursor:pointer;transition:0.15s}
-.quiz-q .q-opt:hover{background:rgba(212,168,67,0.1)}
-.quiz-q .q-opt.correct{background:rgba(76,175,132,0.2);border-color:var(--green)}
-.quiz-q .q-opt.wrong{background:rgba(224,85,90,0.2);border-color:var(--red)}
-.quiz-result{text-align:center;padding:12px;font-size:15px;margin:10px 0;border-radius:8px}
-/* 速查Tab */
-.quick-search{padding:12px}
-.quick-search input{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:var(--card);color:var(--text);font-size:14px;margin-bottom:10px}
-.quick-card{background:var(--card);border-radius:8px;padding:12px;margin-bottom:8px}
-.quick-card .qk-title{font-size:15px;color:var(--gold);font-weight:700}
-.quick-card .qk-def{font-size:13px;color:var(--text);margin-top:4px}
-.quick-card .qk-signal{font-size:12px;color:#8899aa;margin-top:2px}
-/* 实战Tab */
-.battle-scene{text-align:center;padding:20px}
-.battle-scene canvas{border-radius:8px;margin:8px auto;display:block}
-.battle-scene .question{font-size:15px;color:var(--text);margin:10px 0}
-.battle-scene button{margin:4px;padding:10px 20px;font-size:13px}
-.battle-result{padding:10px;border-radius:8px;margin:8px 0;font-size:14px}
-/* 我的Tab */
-.my-info{padding:16px}
-.my-info .stat-row{display:flex;justify-content:space-around;margin:12px 0}
-.my-info .stat-item{text-align:center}
-.my-info .stat-num{font-size:24px;color:var(--gold);font-weight:700}
-.my-info .stat-label{font-size:11px;color:#8899aa}
-.my-info button{display:block;width:100%;margin:8px 0;padding:12px;border-radius:8px;font-size:14px;background:var(--card);color:var(--text);border:1px solid rgba(255,255,255,0.1);text-align:left;cursor:pointer}
-/* 底部Tab */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;max-width:420px;margin:0 auto;background:var(--card);border-top:1px solid rgba(212,168,67,0.15);display:flex;z-index:100}
-.bottom-nav .tab-btn{flex:1;padding:8px 4px 6px;text-align:center;background:none;border:none;color:#667788;font-size:10px;cursor:pointer;transition:0.2s}
-.bottom-nav .tab-btn.active{color:var(--gold)}
-.bottom-nav .tab-btn .tab-icon{font-size:18px;display:block;margin-bottom:1px}
-/* toast */
-.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--gold);color:#0a1628;padding:8px 16px;border-radius:20px;font-size:13px;z-index:999;animation:fadeInOut 1.5s forwards}
-@keyframes fadeInOut{0%{opacity:0;transform:translateX(-50%) translateY(-10px)}20%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0}}
-</style>
-</head>
-<style>@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}</style>
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+.fb{padding:60px 20px;text-align:center}.fb h1{font-size:26px;color:var(--gold);margin-bottom:12px}.fb p{color:var(--dim);font-size:14px}
+.dot{display:inline-block;width:10px;height:10px;background:var(--accent);border-radius:50%;margin:0 4px;animation:pl 1.2s infinite}.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes pl{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+.app{display:none;max-width:1100px;margin:0 auto;padding:0 14px 40px}
+.js-ready .fb{display:none}.js-ready .app{display:block}
+.hd{padding:22px 0;text-align:center;border-bottom:1px solid var(--border);margin-bottom:16px}
+.hd h1{font-size:30px;font-weight:800;color:var(--gold);letter-spacing:2px}
+.hd .sub{color:var(--muted);font-size:13px;margin-top:2px}
+.hd .sts{display:flex;justify-content:center;gap:22px;margin-top:10px;flex-wrap:wrap}
+.si{text-align:center}.sn{font-size:22px;font-weight:800;color:var(--accent)}.sl{font-size:10px;color:var(--muted)}
+.tbs{display:flex;gap:0;margin-bottom:16px;background:var(--card);border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+.tb{flex:1;padding:12px 6px;border:none;background:none;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:.2s;text-align:center}
+.tb:hover{color:var(--text);background:rgba(255,255,255,.03)}.tb.on{color:var(--gold);background:rgba(240,192,64,.08)}
+.tb .ti{display:block;font-size:18px;margin-bottom:1px}
+.pn{display:none}.pn.show{display:block}
+
+/* stage cards */
+.sc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px;transition:.2s}
+.sc:hover{border-color:var(--accent)}
+.sc .si2{font-size:32px;margin-bottom:4px}.sc .sn2{font-size:18px;font-weight:800;color:var(--gold)}.sc .ss{font-size:12px;color:var(--accent);margin-bottom:4px}
+.sc .sd{font-size:12px;color:var(--dim);margin-bottom:10px;line-height:1.6}
+.sc .sbs{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-block;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(77,166,255,.12);color:var(--accent);border:1px solid rgba(77,166,255,.2);cursor:pointer;transition:.15s}
+.chip:hover{background:rgba(77,166,255,.25)}.chip.read{background:rgba(52,211,153,.1);color:var(--green);border-color:rgba(52,211,153,.2)}
+.sp{font-size:11px;color:var(--muted);margin-top:7px}.pb{height:3px;background:#1e2a4a;border-radius:2px;margin-top:2px;overflow:hidden}.pf{height:100%;background:var(--green);border-radius:2px;transition:.3s}
+
+/* library */
+.lc{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.ls{flex:1;min-width:150px;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px}
+.ls:focus{outline:none;border-color:var(--accent)}
+.lf{padding:9px 10px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;cursor:pointer}
+.lg{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px}
+.bc{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px;cursor:pointer;transition:.15s;position:relative}
+.bc:hover{border-color:var(--accent);transform:translateY(-1px)}.bc.done{opacity:.5}
+.bc .bt{font-size:14px;font-weight:700;color:var(--gold)}.bc .ba{font-size:11px;color:var(--muted);margin-bottom:4px}
+.bc .bs{font-size:11px;color:var(--dim);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:5px}
+.bc .bm{display:flex;gap:10px;font-size:10px;color:var(--muted)}
+.bc .bg{font-size:9px;padding:2px 7px;border-radius:8px;background:rgba(77,166,255,.12);color:var(--accent);position:absolute;top:10px;right:10px}
+.bc .bp{font-size:9px;color:var(--green);margin-top:2px}
+
+/* modal */
+.mo{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.82);z-index:100;display:flex;align-items:center;justify-content:center;padding:12px;animation:fi .2s}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+.mc{background:var(--bg);border:1px solid var(--border);border-radius:16px;max-width:720px;width:100%;max-height:92vh;overflow-y:auto;position:relative}
+.mh{position:sticky;top:0;background:var(--bg);padding:15px 18px;border-bottom:1px solid var(--border);z-index:10}
+.mx{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.mx:hover{border-color:var(--red);color:var(--red)}
+.mt{font-size:18px;font-weight:800;color:var(--gold)}.ms{font-size:11px;color:var(--accent);margin-top:2px}
+.br{display:flex;gap:5px;align-items:center;font-size:10px;color:var(--muted);margin-top:3px;flex-wrap:wrap}
+.br a{color:var(--accent);cursor:pointer}.br span{color:var(--dim)}
+.stbs{display:flex;gap:0;margin-top:8px}
+.stb{flex:1;padding:7px;border:none;background:none;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:.2s;text-align:center}
+.stb.on{color:var(--gold);border-bottom-color:var(--gold)}
+.mb{padding:10px 18px 18px}
+
+/* chapters */
+.ci{margin-bottom:1px;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--card)}
+.ch{padding:10px 14px;display:flex;align-items:center;gap:6px;cursor:pointer;transition:.15s}
+.ch:hover{background:rgba(255,255,255,.03)}
+.ch .cn{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;background:#1a2040;color:var(--muted)}
+.ch .cn.done{background:rgba(52,211,153,.15);color:var(--green)}
+.ch .ct{flex:1;font-size:12px;font-weight:600}
+.ch .cl{font-size:9px;padding:1px 6px;border-radius:6px;font-weight:600;margin-right:4px}
+.ch .cl.must{background:rgba(240,192,64,.15);color:var(--gold)}
+.ch .cl.rec{background:rgba(77,166,255,.12);color:var(--accent)}
+.ch .cl.opt{background:rgba(107,125,170,.12);color:var(--muted)}
+.ch .ca{font-size:10px;color:var(--muted);transition:.2s}.ch.open .ca{transform:rotate(180deg)}
+.cb{display:none;padding:0 14px 10px 42px}.cb.open{display:block}
+.pti{margin-bottom:8px}
+.ptt{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:2px}
+.ptc{font-size:11px;color:var(--dim);line-height:1.5;margin-bottom:3px}
+.ptd{font-size:11px;color:var(--text);line-height:1.6;margin-bottom:5px}
+.hlb{border-left:3px solid;padding:5px 9px;margin:3px 0;border-radius:0 5px 5px 0;font-size:10px;line-height:1.5;background:rgba(255,255,255,.03)}
+.hlb.g{border-color:var(--gold)}.hlb.b{border-color:var(--accent)}.hlb.r{border-color:var(--red)}.hlb.gr{border-color:var(--green)}.hlb.p{border-color:var(--purple)}
+
+/* cards */
+.kc{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:12px;margin-bottom:7px}
+.kt{display:inline-block;font-size:9px;padding:2px 7px;border-radius:6px;margin-bottom:4px;font-weight:600}
+.kt.concept{background:rgba(77,166,255,.15);color:var(--accent)}.kt.rule{background:rgba(52,211,153,.15);color:var(--green)}.kt.formula{background:rgba(240,192,64,.15);color:var(--gold)}
+.kn{font-size:12px;font-weight:700;color:var(--gold);margin-bottom:3px}.kc p{font-size:11px;color:var(--dim);line-height:1.6}
+.qt{background:rgba(240,192,64,.04);border-left:3px solid var(--gold);padding:7px 10px;border-radius:0 7px 7px 0;margin-bottom:5px;font-style:italic;font-size:11px;color:#d0c090}
+.pi{font-size:10px;color:var(--dim);padding:2px 0 2px 12px;position:relative}.pi::before{content:"▸";position:absolute;left:0;color:var(--accent)}
+
+/* graph */
+.gc{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.gl{display:flex;flex-wrap:wrap;gap:6px;padding:10px;border-bottom:1px solid var(--border);justify-content:center}
+.li{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--dim)}.ld{width:8px;height:8px;border-radius:50%}
+.ge{display:flex;gap:4px;padding:8px;border-bottom:1px solid var(--border);justify-content:center;flex-wrap:wrap}
+.ge .el{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:600}
+.el.similar{background:rgba(52,211,153,.12);color:var(--green)}
+.el.complement{background:rgba(77,166,255,.12);color:var(--accent)}
+.el.extends{background:rgba(240,192,64,.12);color:var(--gold)}
+.el.contrast{background:rgba(251,113,133,.12);color:var(--red)}
+.el.foundation{background:rgba(167,139,250,.12);color:var(--purple)}
+
+/* progress */
+.ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px}
+.pw{height:6px;background:#1e2a4a;border-radius:3px;overflow:hidden;flex:1;min-width:100px}
+.pwf{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:3px;transition:.3s}
+.pp{font-size:16px;font-weight:800;color:var(--gold)}
+.pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:4px}
+.pr{display:flex;align-items:center;gap:6px;padding:8px 11px;background:var(--card);border:1px solid var(--border);border-radius:9px;cursor:pointer;transition:.1s;font-size:11px}
+.pr:hover{border-color:var(--accent)}
+.pr .pbar{flex:1;height:2px;background:#1e2a4a;border-radius:1px;overflow:hidden}.pr .pbf{height:100%;background:var(--green);border-radius:1px}
+.pr .pps{font-size:9px;color:var(--muted);width:24px;text-align:right}
+.rst{padding:6px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:10px;cursor:pointer;margin-top:8px}
+.rst:hover{border-color:var(--red);color:var(--red)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);padding:8px 18px;border-radius:18px;font-size:11px;color:var(--text);z-index:200;animation:ti .3s;pointer-events:none}
+@keyframes ti{from{opacity:0;transform:translateX(-50%) translateY(6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@media(max-width:600px){.hd h1{font-size:21px}.tb{padding:9px 3px;font-size:10px}.tb .ti{font-size:15px}.lg{grid-template-columns:1fr}.pg{grid-template-columns:1fr}}
+</style></head>
 <body>
-<div id="static-fallback" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:#0a1628;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:20px;text-align:center">
-  <h2 style="color:#d4a843;font-size:24px;margin-bottom:12px">📈 StockKlineMaster</h2>
-  <p style="color:#8899aa;font-size:14px;margin-bottom:16px">K线学习助手 · 加载中...</p>
-  <div style="width:120px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden">
-    <div style="width:60%;height:100%;background:linear-gradient(90deg,#2a5298,#d4a843);border-radius:2px;animation:slide 1.5s ease-in-out infinite"></div>
-  </div>
+<div class="fb" id="fb"><h1>📚 KLineMaster</h1><p>37本经典 · 96课时 · 6阶段科学路径 · 必修/推荐分级</p><p style="margin-top:14px"><span class="dot"></span><span class="dot"></span><span class="dot"></span></p></div>
+<div class="app" id="app">
+<div class="hd"><h1>📚 KLineMaster</h1><div class="sub">交易理论大集合 · 37本经典 · 从心智启蒙到价值投资</div>
+<div class="sts"><div class="si"><div class="sn">37</div><div class="sl">经典著作</div></div><div class="si"><div class="sn" id="tc">0</div><div class="sl">课节</div></div><div class="si"><div class="sn" id="dc">0</div><div class="sl">已学完</div></div><div class="si"><div class="sn" id="hr">0</div><div class="sl">学时</div></div></div></div>
+<div class="tbs"><button class="tb on" data-tab="path"><span class="ti">🗺️</span>学习路径</button><button class="tb" data-tab="lib"><span class="ti">📚</span>书库</button><button class="tb" data-tab="graph"><span class="ti">🕸️</span>知识图谱</button><button class="tb" data-tab="prog"><span class="ti">📊</span>进度</button></div>
+<div class="pn show" id="pn-path"></div>
+<div class="pn" id="pn-lib"><div class="lc"><input class="ls" id="ls" placeholder="🔍 搜索书名、作者、概念..."><select class="lf" id="lfc"><option value="all">全部分类</option></select><select class="lf" id="lfs"><option value="0">全部阶段</option></select><select class="lf" id="lfd"><option value="0">全部难度</option></select></div><div class="lg" id="lgrid"></div></div>
+<div class="pn" id="pn-graph"><div class="gc"><div class="ge" id="gedge"></div><div class="gl" id="gleg"></div><canvas id="gcv" style="width:100%;height:460px;display:block"></canvas></div></div>
+<div class="pn" id="pn-prog"><div class="ph"><span>总体进度</span><div class="pw"><div class="pwf" id="pwf" style="width:0%"></div></div><span class="pp" id="ppct">0%</span></div><div class="pg" id="pgrid"></div><button class="rst" id="rst">🔄 重置进度</button></div>
 </div>
-
-<div id="loading">
-  <div class="spinner"></div>
-  <p>K线学习助手加载中...</p>
-</div>
-
-<header class="header">
-  <h1>📈 StockKlineMaster</h1>
-  <div class="sub">A股K线学习助手 · 从零到精通</div>
-  <div class="progress-wrap">
-    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-    <span class="progress-text" id="progress-text">0/10 (0%)</span>
-  </div>
-</header>
-
-<!-- 学习Tab -->
-<div class="tab-content active" id="tab-learn">
-  <div id="chapter-list"></div>
-</div>
-
-<!-- 速查Tab -->
-<div class="tab-content" id="tab-quick"></div>
-
-<!-- 实战Tab -->
-<div class="tab-content" id="tab-battle"></div>
-
-<!-- 我的Tab -->
-<div class="tab-content" id="tab-my"></div>
-
-<!-- 底部导航 -->
-<nav class="bottom-nav">
-  <button class="tab-btn active" id="btn-learn" onclick="switchTab('learn');renderChapterList()">
-    <span class="tab-icon">📚</span>学习
-  </button>
-  <button class="tab-btn" id="btn-quick" onclick="switchTab('quick');renderQuickRef()">
-    <span class="tab-icon">⚡</span>速查
-  </button>
-  <button class="tab-btn" id="btn-battle" onclick="switchTab('battle');renderBattleScene()">
-    <span class="tab-icon">📈</span>实战
-  </button>
-  <button class="tab-btn" id="btn-my" onclick="switchTab('my');renderMyPage()">
-    <span class="tab-icon">👤</span>我的
-  </button>
-</nav>
-
-<!-- 课程数据（隔离存储） -->
-<script type="application/json" id="courses-data">
-[{"id": 1, "title": "K线基础入门", "subtitle": "日本蜡烛图技术 · Steve Nison", "icon": "🕯️", "sections": [{"type": "story", "title": "📖 起源故事", "content": "300多年前的日本大阪，一位名叫本间宗久的米商发明了世界上最早的K线图。他每天记录大米的开盘价、最高价、最低价、收盘价，用蜡烛形状来观察市场情绪。这套方法后来传遍全球，成为所有交易者必学的基本功。"}, {"type": "knowledge", "title": "🔑 单根K线的构成", "content": "每根K线由4个价格组成：<b>开盘价</b>（蜡烛的起点）、<b>收盘价</b>（蜡烛的终点）、<b>最高价</b>（上影线顶端）、<b>最低价</b>（下影线底端）。实体部分=开盘与收盘之间的矩形。", "canvas": "single_kline"}, {"type": "knowledge", "title": "☀️ 阳线与🌙 阴线", "content": "<b>阳线</b>（红色/空心）：收盘价 > 开盘价，买方力量强。实体越长，涨势越猛。<br><b>阴线</b>（绿色/实心）：收盘价 < 开盘价，卖方力量强。实体越长，跌势越凶。", "canvas": "yang_yin"}, {"type": "knowledge", "title": "📏 上下影线的含义", "content": "<b>上影线</b>：盘中冲到过更高价但被压回，反映上方抛压。<br><b>下影线</b>：盘中跌到过更低价但被买回，反映下方支撑。<br>长下影线+小实体=可能见底；长上影线+小实体=可能见顶。"}, {"type": "knowledge", "title": "✚ 十字星", "content": "开盘价≈收盘价，实体极小。反映多空力量均衡，是趋势可能反转的信号。高位十字星看跌，低位十字星看涨。"}, {"type": "knowledge", "title": "🔍 A股实战提示", "content": "A股涨跌停±10%（创业板±20%），K线实体最大不超过涨跌停幅度。一字板（开盘=收盘=最高=最低）代表极端情绪。"}], "quiz": [{"q": "K线图中，当收盘价高于开盘价时，这根K线是？", "a": ["阳线", "阴线", "十字星", "一字线"], "correct": 0}, {"q": "K线的\"上影线\"顶端代表什么？", "a": ["开盘价", "收盘价", "最高价", "最低价"], "correct": 2}, {"q": "长下影线的K线通常意味着什么？", "a": ["上方抛压大", "下方支撑强", "趋势继续", "没有意义"], "correct": 1}, {"q": "十字星出现时，反映了什么市场状态？", "a": ["买方绝对强势", "卖方绝对强势", "多空力量均衡", "没有人交易"], "correct": 2}, {"q": "K线图最早起源于哪个国家？", "a": ["美国", "英国", "日本", "中国"], "correct": 2}]}, {"id": 2, "title": "经典K线组合形态", "subtitle": "形态识别 · 成功率统计", "icon": "🔬", "sections": [{"type": "story", "title": "📖 形态的智慧", "content": "单根K线只能看到一天的战斗，形态组合则能看到一场战役。就像读小说不能只看一个词，要看整句话——K线形态就是市场的\"语言\"。"}, {"type": "knowledge", "title": "🔨 锤子线与上吊线", "content": "<b>锤子线</b>（底部反转）：出现在下跌趋势末端，实体小、下影线≥实体2倍、上影线极短或无。成功率约60%。<br><b>上吊线</b>（顶部反转）：形态相同但出现在上涨趋势末端，信号相反。", "canvas": "hammer"}, {"type": "knowledge", "title": "🐂 吞没形态", "content": "<b>看涨吞没</b>：阴线后紧跟一根更大的阳线，阳线实体完全\"吞没\"前一根阴线。买方逆转信号！<br><b>看跌吞没</b>：阳线后紧跟更大的阴线。卖方反扑信号！成功率约65-70%。", "canvas": "engulfing"}, {"type": "knowledge", "title": "⭐ 启明星与黄昏星", "content": "<b>启明星</b>（三根）：阴线→小实体（跳空低开）→阳线（跳空高开）。底部反转信号，成功率约70%。<br><b>黄昏星</b>：形态相反，顶部反转信号。"}, {"type": "knowledge", "title": "🐦 三只乌鸦", "content": "连续三根阴线，每根开盘价都在前一根实体内，收盘价接近当日最低。强烈的下跌趋势确认信号！成功率约78%。"}, {"type": "knowledge", "title": "💪 三兵形态", "content": "连续三根阳线，每根收盘价逐步抬高。上涨趋势健康延续的信号。但要警惕第三根出现长上影——可能是强弩之末。"}, {"type": "knowledge", "title": "☁️ 乌云盖顶", "content": "阳线后出现阴线，阴线开盘价高于前阳线收盘价（跳空高开），但收盘价跌入前阳线实体内一半以上。顶部反转信号！"}], "quiz": [{"q": "锤子线的下影线长度至少应该是实体的几倍？", "a": ["1倍", "2倍", "3倍", "没有要求"], "correct": 1}, {"q": "看涨吞没形态中，第二根K线应该是什么颜色？", "a": ["阴线", "阳线", "十字星", "都可以"], "correct": 1}, {"q": "三只乌鸦形态由几根K线组成？", "a": ["1根", "2根", "3根", "5根"], "correct": 2}, {"q": "乌云盖顶是哪种类型的信号？", "a": ["底部反转", "顶部反转", "趋势延续", "震荡信号"], "correct": 1}, {"q": "三兵形态中如果第三根出现长上影，说明什么？", "a": ["上涨加速", "多方衰竭", "趋势确认", "没有含义"], "correct": 1}]}, {"id": 3, "title": "技术指标速查手册", "subtitle": "MA·MACD·RSI·KDJ·布林带", "icon": "📊", "sections": [{"type": "knowledge", "title": "📈 MA均线", "content": "<b>一句话</b>：过去N天收盘价的平均值连成的线。<br><b>公式</b>：MA(N)=sum(收盘价,N)/N<br><b>信号</b>：短期MA上穿长期MA=<b class='gold'>金叉</b>（买入）；下穿=<b class='gold'>死叉</b>（卖出）。常用：5日、10日、20日、60日。", "canvas": "ma_cross"}, {"type": "knowledge", "title": "📉 MACD", "content": "<b>一句话</b>：通过快慢均线的差值判断趋势强度和方向。<br><b>构成</b>：DIF线（快线）、DEA线（慢线）、柱状图（DIF-DEA）<br><b>信号</b>：DIF上穿DEA=金叉买；下穿=死叉卖；<b class='gold'>背离</b>：价格新高但MACD未新高→顶背离（卖出信号）", "canvas": "macd"}, {"type": "knowledge", "title": "📊 RSI相对强弱", "content": "<b>一句话</b>：衡量近期涨跌力量对比，0-100范围。<br><b>公式</b>：RSI=100-100/(1+RS)，RS=上涨均值/下跌均值<br><b>信号</b>：RSI>70=<b class='gold'>超买</b>（考虑卖出）；RSI<30=<b class='gold'>超卖</b>（考虑买入）；背离信号极强。", "canvas": "rsi"}, {"type": "knowledge", "title": "🔄 KDJ随机指标", "content": "<b>一句话</b>：判断当前价格在近期高低区间的位置。<br><b>构成</b>：K线（快）、D线（慢）、J线（最敏感）<br><b>信号</b>：K线从下方上穿D线=金叉；J线>100=超买；J线<0=超卖；<b class='gold'>J线拐头</b>是最灵敏信号。"}, {"type": "knowledge", "title": "🎗️ 布林带", "content": "<b>一句话</b>：用标准差画通道，判断价格极端位置。<br><b>构成</b>：中轨=MA(20)、上轨=中轨+2σ、下轨=中轨-2σ<br><b>信号</b>：价格触及上轨=超买；触及下轨=超卖；<b class='gold'>收口后开口</b>=大行情启动；<b class='gold'>开口后收口</b>=行情结束。", "canvas": "bollinger"}, {"type": "knowledge", "title": "📊 成交量VOL", "content": "<b>一句话</b>：价格是表象，量是本质——\"量在价先\"。<br><b>关键口诀</b>：<br>📈放量上涨=健康上涨，可持有<br>📉缩量下跌=下跌动力不足<br>⚠️天量天价=顶部信号<br>✅地量地价=底部信号"}], "quiz": [{"q": "MACD的金叉信号是指？", "a": ["DIF上穿DEA", "DIF下穿DEA", "柱状图变绿", "K线上穿D线"], "correct": 0}, {"q": "RSI指标中，通常认为多少以上是\"超买\"区域？", "a": ["50", "60", "70", "90"], "correct": 2}, {"q": "布林带收口后突然开口，通常意味着什么？", "a": ["行情结束", "大行情启动", "没有意义", "继续震荡"], "correct": 1}, {"q": "\"价升量缩\"在实战中通常是什么信号？", "a": ["上涨动力减弱", "超级强势", "应该追涨", "没有含义"], "correct": 0}, {"q": "KDJ指标中最灵敏的线是哪条？", "a": ["K线", "D线", "J线", "一样灵敏"], "correct": 2}]}, {"id": 4, "title": "道氏理论", "subtitle": "Charles Dow · 技术分析之基石", "icon": "🏛️", "sections": [{"type": "story", "title": "📖 华尔街日报上的传奇", "content": "1900年代，查尔斯·道在《华尔街日报》上发表了一系列社论，系统阐述了市场运行的规律。他从未将其命名为\"道氏理论\"，但后人整理了他的思想，成为所有技术分析的基石。"}, {"type": "knowledge", "title": "📐 三大核心假设", "content": "① <b>市场行为包容一切</b>：所有已知信息都已反映在价格中<br>② <b>市场呈趋势运行</b>：价格不是随机游走，有明确方向<br>③ <b>历史会重演</b>：人性不变，市场行为模式会重复"}, {"type": "knowledge", "title": "📏 三种趋势", "content": "<b>主要趋势</b>（潮汐）：持续1年以上，涨跌幅>20%<br><b>次级趋势</b>（波浪）：持续3周-3月，回调1/3-2/3<br><b>日间波动</b>（涟漪）：无关紧要，噪音"}, {"type": "knowledge", "title": "🔄 趋势三阶段", "content": "<b>上升趋势</b>：①累积阶段（聪明钱入场）→ ②参与阶段（趋势明确）→ ③派发阶段（聪明钱退出）<br><b>下跌趋势</b>：①派发→②恐慌→③绝望"}, {"type": "knowledge", "title": "✅ 指数互相验证", "content": "道氏理论强调：工业指数和运输指数的走势必须互相验证。一个指数创新高而另一个未确认，则趋势可能不稳固。对应A股：上证综指和深证成指需配合验证。"}], "quiz": [{"q": "道氏理论将趋势分为几种？", "a": ["1种", "2种", "3种", "5种"], "correct": 2}, {"q": "道氏理论的核心假设不包括以下哪项？", "a": ["市场行为包容一切", "市场呈趋势运行", "消息决定价格", "历史会重演"], "correct": 2}, {"q": "上升趋势的第三阶段通常是什么？", "a": ["累积阶段", "参与阶段", "派发阶段", "绝望阶段"], "correct": 2}, {"q": "主要趋势通常持续多长时间？", "a": ["几天", "几周", "1年以上", "几小时"], "correct": 2}, {"q": "道氏理论是谁提出的？", "a": ["艾略特", "江恩", "查尔斯·道", "巴菲特"], "correct": 2}]}, {"id": 5, "title": "艾略特波浪理论", "subtitle": "Ralph Elliott · 自然法则", "icon": "🌊", "sections": [{"type": "story", "title": "📖 从病床上看到的规律", "content": "1930年代，重病卧床的会计师艾略特在研究了75年的股市数据后，发现市场价格以可识别的波浪形态运动。他提出：市场遵循5浪前进+3浪后退的规律，这源自大自然的斐波那契数列。"}, {"type": "knowledge", "title": "🌊 5+3=8浪结构", "content": "<b>推动浪（5浪）</b>：1浪（启动）、2浪（回调）、3浪（主升，通常最长最猛）、4浪（盘整）、5浪（冲顶）<br><b>调整浪（3浪）</b>：A浪（下跌）、B浪（反弹诱多）、C浪（主跌）", "canvas": "elliott_wave"}, {"type": "knowledge", "title": "🔢 斐波那契回调位", "content": "波浪回调的常见比例为：<br><b>0.382</b>（浅回调，趋势强）<br><b>0.500</b>（正常回调）<br><b>0.618</b>（黄金分割，最深回调）<br>实战中在0.382和0.618之间寻找入场点。"}, {"type": "knowledge", "title": "⚠️ 波浪理论的局限", "content": "波浪的级别识别主观性强，\"千人千浪\"是常态。建议：<br>① 结合其他指标验证<br>② 不要过度细分波浪<br>③ 只在明显趋势中使用<br>④ 错了及时认错，不执念于\"数浪\""}], "quiz": [{"q": "艾略特波浪理论中，完整的周期由几浪组成？", "a": ["3浪", "5浪", "8浪", "13浪"], "correct": 2}, {"q": "推动浪中通常最长、最猛的一浪是？", "a": ["第1浪", "第2浪", "第3浪", "第5浪"], "correct": 2}, {"q": "斐波那契回调位不包括以下哪个？", "a": ["0.382", "0.500", "0.618", "0.750"], "correct": 3}, {"q": "波浪理论最大的局限是什么？", "a": ["计算太复杂", "千人千浪主观性强", "只适合美股", "没有局限"], "correct": 1}, {"q": "调整浪A-B-C中，哪一浪最容易诱多？", "a": ["A浪", "B浪", "C浪", "都一样"], "correct": 1}]}, {"id": 6, "title": "威科夫方法", "subtitle": "Richard Wyckoff · 聪明钱的足迹", "icon": "🔍", "sections": [{"type": "story", "title": "📖 向华尔街传奇学习", "content": "20世纪初，理查德·威科夫通过观察\"市场操纵者\"的行为，总结出一套分析方法。他的核心观点：价格由供需决定，而最大的供需方是\"聪明钱\"——跟着他们的脚印走，而不是跟着散户情绪跑。"}, {"type": "knowledge", "title": "🔄 市场周期四阶段", "content": "① <b>吸筹</b>：价格低位横盘，成交量萎缩后突然放大<br>② <b>上涨</b>：突破吸筹区上沿，量价配合上涨<br>③ <b>派发</b>：高位横盘，成交量放大但价格不涨<br>④ <b>下跌</b>：跌破派发区下沿"}, {"type": "knowledge", "title": "🧠 聪明钱 vs 散户", "content": "<b>聪明钱</b>：低位吸筹、高位派发，常与大众方向相反<br><b>散户</b>：底部恐慌卖出、顶部贪婪追高<br><b>威科夫法则</b>：散户恐慌时买，散户贪婪时卖"}, {"type": "knowledge", "title": "⚖️ 供需分析", "content": "<b>弹簧效应</b>：价格短暂跌破支撑后迅速收回→强烈买入信号<br><b>终极震仓</b>：主力在拉升前最后一跌，吓出最后的散户<br><b>量价验证</b>：上涨必须有量配合，无量上涨=假突破"}, {"type": "knowledge", "title": "📈 威科夫九段检验法", "content": "1.判断大盘趋势→2.选强势板块→3.选板块龙头→4.判断个股处于哪个阶段→5.分析供需→6.看成交量→7.等待买入点→8.设止损→9.跟踪持仓"}], "quiz": [{"q": "威科夫方法中，\"聪明钱\"通常在哪个阶段买入？", "a": ["上涨阶段", "派发阶段", "吸筹阶段", "下跌阶段"], "correct": 2}, {"q": "\"弹簧效应\"是指什么？", "a": ["价格突破阻力", "短暂跌破支撑后迅速收回", "成交量萎缩", "没有这个效应"], "correct": 1}, {"q": "威科夫认为价格由什么决定？", "a": ["消息面", "技术指标", "供需", "政策"], "correct": 2}, {"q": "派发阶段的典型特征是什么？", "a": ["价跌量缩", "价平量大", "价涨量增", "没有特征"], "correct": 1}, {"q": "\"终极震仓\"发生在哪个阶段？", "a": ["吸筹末期", "上涨中期", "派发中期", "下跌中期"], "correct": 0}]}, {"id": 7, "title": "海龟交易法则", "subtitle": "Richard Dennis · 系统化交易", "icon": "🐢", "sections": [{"type": "story", "title": "📖 史上最伟大的交易实验", "content": "1983年，传奇交易员理查德·丹尼斯和他的搭档打了一个赌：交易能力是天生的还是可以培养的？丹尼斯从各行各业招募了23个人，用两周教会他们一套交易系统，然后给他们真金白银去交易。这批\"海龟\"在4年内赚了超过1亿美元！"}, {"type": "knowledge", "title": "📈 入场规则", "content": "<b>系统一</b>（短期）：价格突破<b class='gold'>20日最高点</b>买入；跌破<b class='gold'>10日最低点</b>卖出<br><b>系统二</b>（长期）：突破<b class='gold'>55日最高点</b>买入；跌破<b class='gold'>20日最低点</b>卖出"}, {"type": "knowledge", "title": "🛡️ ATR止损（2N原则）", "content": "<b>N值</b>=ATR(20)，即20日真实波幅均值<br><b>止损位</b>=入场价 - 2×N<br>例如：买入价10元，ATR=0.5元，止损=9元<br>核心原则：<b>每笔亏损不超过总资金的2%</b>"}, {"type": "knowledge", "title": "🏗️ 金字塔加仓", "content": "盈利后按N值间隔加仓：<br>第1仓（初始）：价格突破入场<br>第2仓：入场价+0.5N<br>第3仓：入场价+1N<br>第4仓（最多）：入场价+1.5N<br>⚠️总仓位不超过4个单位"}, {"type": "knowledge", "title": "💡 海龟法则的灵魂", "content": "① <b>系统化</b>：规则明确，不靠感觉<br>② <b>纪律</b>：严格止损，盈亏同源<br>③ <b>趋势跟踪</b>：不预测，只跟随<br>④ <b>资金管理</b>：绝不在一笔交易中押上所有筹码"}], "quiz": [{"q": "海龟交易法则的核心交易理念是什么？", "a": ["预测顶底", "趋势跟踪", "抄底逃顶", "日内短线"], "correct": 1}, {"q": "海龟法则用2N止损，这里的N代表什么？", "a": ["交易次数", "ATR(20)", "资金量", "天数"], "correct": 1}, {"q": "海龟法则最多允许持有几个加仓单位？", "a": ["2个", "3个", "4个", "没有限制"], "correct": 2}, {"q": "海龟交易员来自什么背景？", "a": ["华尔街精英", "各行各业普通人", "数学家", "程序员"], "correct": 1}, {"q": "海龟法则中，短期系统的入场信号是突破几日高点？", "a": ["10日", "20日", "55日", "100日"], "correct": 1}]}, {"id": 8, "title": "交易心理学", "subtitle": "心态·纪律·利弗莫尔哲学", "icon": "🧠", "sections": [{"type": "story", "title": "📖 利弗莫尔：从5美元到1亿", "content": "杰西·利弗莫尔14岁开始交易，一生四起四落。他最著名的一句话：\"华尔街没有新鲜事，因为人性永不改变。\"他的经历告诉我们：技术再好，心态崩了，一切归零。"}, {"type": "knowledge", "title": "😱 恐惧与贪婪", "content": "<b>恐惧</b>：底部时不敢买（怕继续跌），赚了一点就跑（怕利润回吐）<br><b>贪婪</b>：顶部时想赚更多，亏损时不愿止损（幻想反弹）<br><b>解药</b>：用规则代替情绪——<b class='gold'>计划你的交易，交易你的计划</b>"}, {"type": "knowledge", "title": "🛑 止损纪律", "content": "利弗莫尔说：<b>\"截断亏损，让利润奔跑。\"</b><br>① 每笔交易设好止损再入场<br>② 亏损超过总资金2%无条件离场<br>③ 止损后不要立即报复性交易<br>④ 连续3笔亏损→停止交易1天"}, {"type": "knowledge", "title": "📦 仓位管理", "content": "<b>凯利公式</b>：f=(bp-q)/b（b=盈亏比，p=胜率，q=1-p）<br><b>实战简化</b>：单笔风险≤总资金2%<br>总仓位≤50%（留子弹应对意外）<br>同板块仓位≤20%（防踩雷）"}, {"type": "knowledge", "title": "🚫 常见心理陷阱", "content": "❌ <b>锚定效应</b>：死盯买入价，\"回本就卖\"<br>❌ <b>确认偏误</b>：只看支持自己观点的信息<br>❌ <b>报复交易</b>：止损后立即反向操作<br>❌ <b>过度交易</b>：手里有钱就手痒<br>❌ <b>后悔厌恶</b>：错过行情后追高"}, {"type": "knowledge", "title": "✅ 利弗莫尔交易守则", "content": "1. 不要试图预测市场——跟随市场<br>2. 市场永远是对的<br>3. \"市场在某种程度上是对的时候，你才能赚大钱\"<br>4. 赚大钱不是靠选股，是靠坐得住<br>5. \"我赚大钱从来不是靠思考，是靠坐着不动\"<br>6. 亏损头寸不要加仓——\"不要试图摊平亏损\""}], "quiz": [{"q": "利弗莫尔的核心交易哲学是？", "a": ["短线快进快出", "截断亏损让利润奔跑", "分散投资", "价值投资"], "correct": 1}, {"q": "连续亏损几笔后应该停止交易？", "a": ["1笔", "2笔", "3笔", "不需要停"], "correct": 2}, {"q": "\"锚定效应\"在交易中表现为？", "a": ["只关注技术指标", "死盯买入价", "忘记止损", "频繁交易"], "correct": 1}, {"q": "单笔交易风险建议不超过总资金的？", "a": ["1%", "2%", "5%", "10%"], "correct": 1}, {"q": "\"计划你的交易，交易你的计划\"的核心是什么？", "a": ["快速反应", "用规则代替情绪", "随机应变", "听消息操作"], "correct": 1}]}, {"id": 9, "title": "A股实战要点", "subtitle": "规则·制度·中国特色", "icon": "🇨🇳", "sections": [{"type": "knowledge", "title": "⏰ 集合竞价", "content": "<b>9:15-9:20</b>：可申报可撤单（试盘阶段，注意虚假挂单）<br><b>9:20-9:25</b>：可申报不可撤单（真实意图）<br><b>9:25-9:30</b>：开盘前5分钟，不可操作<br>📌 关键：9:20后还在的大量买单才是真买"}, {"type": "knowledge", "title": "📊 涨跌停板", "content": "主板±<b>10%</b>、创业板/科创板±<b>20%</b>、北交所±<b>30%</b>、ST/*ST ±<b>5%</b><br><b>一字涨停</b>：开盘即涨停，全天无成交→次日大概率高开<br><b>一字跌停</b>：开盘即跌停→不要抄底，等放量"}, {"type": "knowledge", "title": "📅 T+1交割制度", "content": "<b>T日买入</b>→T+1日才能卖出<br>资金：卖出后实时到账（可用），T+1日可取出<br><b>影响</b>：当天涨了不能卖→追高需谨慎；当天跌了不能跑→止损要提前"}, {"type": "knowledge", "title": "🐉 龙虎榜解读", "content": "每日涨跌幅偏离值达±7%的前5名会登龙虎榜。<br><b>看什么</b>：<br>① 买入/卖出前5席位（机构 vs 游资）<br>② 买卖净额（净买=看多）<br>③ 是否有\"藏獒\"席位（知名游资）<br>④ 机构专用席位大量买入=中期看好"}, {"type": "knowledge", "title": "💰 北向资金", "content": "通过沪港通/深港通进入A股的境外资金。<br><b>持续净流入</b>→外资看好A股，中期利多<br><b>持续净流出</b>→外资撤退，注意风险<br>📌 单日百亿以上净流入/流出值得高度关注"}, {"type": "knowledge", "title": "🏢 融资融券", "content": "<b>融资</b>（做多）：借券商的钱买股票→牛市助推器<br><b>融券</b>（做空）：借股票卖出后买回还→熊市助推器<br><b>融资余额</b>持续增加→市场偏乐观；余额骤降→恐慌出逃"}], "quiz": [{"q": "A股主板股票的涨跌停幅度是多少？", "a": ["±5%", "±10%", "±20%", "没有限制"], "correct": 1}, {"q": "集合竞价中，哪个时段不能撤单？", "a": ["9:15-9:20", "9:20-9:25", "9:25-9:30", "全天可撤"], "correct": 1}, {"q": "T+1制度下，今天买入的股票最早哪天能卖？", "a": ["今天", "明天", "后天", "下周一"], "correct": 1}, {"q": "龙虎榜中\"机构专用\"席位大量买入说明什么？", "a": ["短期炒作", "中期看好", "利空信号", "没有含义"], "correct": 1}, {"q": "北向资金持续净流入通常意味着什么？", "a": ["外资看空", "外资看好", "市场见顶", "与A股无关"], "correct": 1}]}, {"id": 10, "title": "综合实战策略", "subtitle": "CAN SLIM·三重滤网·共振分析", "icon": "🎯", "sections": [{"type": "story", "title": "📖 欧奈尔：从散户到传奇", "content": "威廉·欧奈尔30岁创立《投资者商业日报》，他总结的CAN SLIM选股法集基本面和技术面之大成，创造了美国投资大赛史上最高年收益率记录。"}, {"type": "knowledge", "title": "🎯 CAN SLIM选股法", "content": "<b>C</b>=Current Earnings（当季盈利增长≥25%）<br><b>A</b>=Annual Earnings（年度盈利增长≥25%）<br><b>N</b>=New（新产品/新管理层/新高）<br><b>S</b>=Supply&Demand（流通盘小+成交量放大）<br><b>L</b>=Leader（买龙头不买跟风）<br><b>I</b>=Institutional（机构持仓增加）<br><b>M</b>=Market（大盘方向：顺势而为）"}, {"type": "knowledge", "title": "🔱 三重滤网交易系统", "content": "亚历山大·埃尔德设计：<br><b>第一层</b>（大周期，如周线）：判断趋势方向→用MACD柱状图<br><b>第二层</b>（中周期，如日线）：在回调中找入场点→用RSI/KDJ超卖<br><b>第三层</b>（小周期）：精确入场→突破确认"}, {"type": "knowledge", "title": "🔄 多周期共振", "content": "<b>核心逻辑</b>：多个时间周期的信号同时指向同一方向时，胜率最高。<br>例如：周线MACD金叉 + 日线突破20日均线 + 60分钟RSI回调到位→三重共振，高胜率入场。"}, {"type": "knowledge", "title": "📋 完整交易流程", "content": "1️⃣ 大盘判断（道氏+均线定方向）<br>2️⃣ 板块选择（北向资金+涨幅榜）<br>3️⃣ 个股筛选（CAN SLIM+技术指标）<br>4️⃣ 多周期共振确认<br>5️⃣ 计算仓位（海龟法则2N止损反推）<br>6️⃣ 设止损入场<br>7️⃣ 移动止盈（ATR跟踪）<br>8️⃣ 复盘总结"}, {"type": "knowledge", "title": "💎 送给初学者的忠告", "content": "① <b>保住本金</b>是第一位的——巴菲特的铁律<br>② 先用模拟盘至少3个月<br>③ 找到适合自己的方法，不要东学西学<br>④ 交易日记是成长最快的方式<br>⑤ 承认亏损是交易的一部分<br>⑥ 不要负债炒股<br>⑦ 慢就是快——年化20%足以成为顶级交易员"}], "quiz": [{"q": "CAN SLIM中字母C代表什么？", "a": ["技术面", "当季盈利增长", "市值", "分红"], "correct": 1}, {"q": "三重滤网系统的第一层用什么周期？", "a": ["分钟图", "日线", "周线（大周期）", "秒级"], "correct": 2}, {"q": "多周期共振的核心优势是什么？", "a": ["交易更快", "胜率更高", "不用止损", "适合短线"], "correct": 1}, {"q": "巴菲特最重要的投资铁律是什么？", "a": ["分散投资", "保住本金", "追涨杀跌", "频繁交易"], "correct": 1}, {"q": "对于初学者，建议先用模拟盘多少时间？", "a": ["1周", "1个月", "至少3个月", "不需要"], "correct": 2}]}]
+<script type="application/json" id="dt">
+{"books":[{"id":"b01","title":"日本蜡烛图技术","author":"Steve Nison","category":"K线技术","stage":2,"diff":2,"hours":14,"summary":"K线分析奠基之作。系统讲解50多种蜡烛图形态的识别方法和市场含义。","chapters":[{"title":"第1章·K线构成与读法","level":"必修","points":[{"t":"一根K线的故事","c":"阳=收盘>开盘(买方胜)。阴=收盘<开盘(卖方胜)。实体=力道。影线=曾到达后被推回。","detail":"每根K线=完整微型故事：开盘=多空起始位。最高=多头最远。最低=空头最远。收盘=最终胜负。","highlights":[{"text":"核心：每根K线=完整多空博弈故事","color":"gold"}]}]},{"title":"第2章·单K线反转信号","level":"必修","points":[{"t":"锤子线与上吊线","c":"实体小+下影极长+上影极短。跌末=锤子(看涨)。涨末=上吊(看跌)。次日K线验证必需。","detail":"锤子逻辑：空头打下去后多头强力拉回收盘在开盘附近→底部可能。上吊反之。必须等次日确认。","highlights":[{"text":"规则：次日K线验证必不可少","color":"green"}]},{"t":"十字星","c":"开盘=收盘多空均衡。趋势末端=反转信号。长腿十字星+大成交量=最强信号。","detail":"十字星越长腿说明多空争夺越激烈，反转力越大。配合成交量放大=重要反转点。","highlights":[{"text":"核心：十字星+趋势末端=反转信号","color":"gold"}]}]},{"title":"第3章·双K与三K反转","level":"必修","points":[{"t":"吞没形态","c":"第二根实体完全吞没第一根。看涨吞没=阴线后更大阳线。吞没力度越大信号越强。","detail":"强吞没：吞没线实体≥被吞没线1.5倍+在支撑位+放量。胜率>65%。","highlights":[{"text":"核心：吞没=多空力量质变","color":"gold"}]},{"t":"启明星与黄昏星","c":"大阴→跳空小K→大阳(收复50%+)=启明星(看涨)。大阳→跳空小K→大阴(跌入50%+)=黄昏星(看跌)。","detail":"三根K线讲述：空头强→多空僵持→多头反攻的完整故事。第三天必需深入第一天50%+。","highlights":[{"text":"规则：第三天深入第一天50%+信号才有效","color":"green"}]}]},{"title":"第4章·多指标共振","level":"推荐","points":[{"t":"K线+指标共振","c":"单K线胜率约55%→K线+RSI共振约70%→K线+RSI+均线共振约80%。共振越多仓位越大。","detail":"最强共振组合：K线反转+RSI超买超卖+布林带触及上下轨+均线支撑阻力。","highlights":[{"text":"规则：共振越多信号越强仓位越大","color":"green"}]}]}],"knowledge_cards":[{"t":"锤子线三要素","c":"①跌势末端②下影≥实体2倍③上影极短④有成交量⑤次日阳线确认。五条件全满足反转概率>70%。","type":"rule"},{"t":"吞没形态强弱","c":"强(胜率>65%)：1.5倍实体+支撑位+放量+覆盖前几根。弱(<40%)：盘整中+实体差距不大+无量。","type":"rule"}],"quotes":["蜡烛图比任何图表形式都能更快揭示市场心理变化。","一根K线讲述的是完整的多空博弈故事。"],"practice":["结合成交量验证","多时间框架确认"]},{"id":"b02","title":"日本蜡烛图技术新解","author":"Steve Nison","category":"K线技术","stage":2,"diff":3,"hours":12,"summary":"进阶版。深入三山/三川、反击线等高级反转信号，增加蜡烛图与西方技术指标结合。","chapters":[{"title":"第1章·三山/三川形态","level":"必修","points":[{"t":"三山(头肩顶)","c":"三次冲击同一阻力区失败形成三重顶。中间略高=头部，跌破颈线确认顶部反转。","detail":"多头三次进攻均被空头击退，每次回落低点形成颈线支撑。第三次反弹无力创新高后跌破颈线——所有买入者被套牢，卖压集中释放导致加速下跌，是最可靠的顶部反转信号之一。","highlights":[{"text":"三山=多头三次进攻均告失败，空头占据主导","color":"gold"},{"text":"跌破颈线=多空力量彻底逆转的分水岭","color":"red"}]},{"t":"颈线测量法","c":"头部到颈线的垂直距离=跌破颈线后的最小下跌目标。非精确价位，是最小目标区域。","detail":"最经典的形态目标测算方法。若头部100元、颈线90元，则距离10元，最小目标=90-10=80元。实际走势常超过此目标，到达目标区域后需结合其他信号判断是否平仓。","highlights":[{"text":"最小目标=颈线-(头部-颈线)，非精确价位","color":"gold"}]}]},{"title":"第2章·反击线与平头形态","level":"必修","points":[{"t":"反击线(遭遇线)","c":"跳空后当日被反向推回收盘于前日收盘附近。多头/空头反击成功，反映极端情绪快速逆转。","detail":"比刺透形态更强——跳空幅度更大意味着初始动能更极端，而当日完全回补说明这股动能瞬间衰竭。牛市反击线=跳空低开后收于前日收盘附近，是强力买入信号。","highlights":[{"text":"反击=跳空后反向推回=动能瞬间衰竭","color":"gold"}]},{"t":"平头顶/底叠加","c":"多次冲击同一价位失败形成平头。平头顶+看跌吞没=强烈卖出。平头底+锤子线=强烈买入。","detail":"单一信号可靠度约60%，两个独立信号叠加后可靠度升至80%以上。平头确认了关键阻力/支撑位，吞没或锤子确认了反转动能，双重验证大幅降低假信号概率。","highlights":[{"text":"平头+其他反转信号共振=胜率提升20-30%","color":"green"}]}]},{"title":"第3章·蜡烛图与西方指标融合","level":"推荐","points":[{"t":"蜡烛图+RSI背离","c":"看涨吞没+RSI底背离=双确认买入。锤子线+MACD金叉=高胜率反弹信号。共振提升胜率。","detail":"蜡烛图提供精确的入场时点，西方指标提供趋势方向和动量确认。两者结合弥补了蜡烛图易出假信号的弱点——只有当指标也支持反转时才入场，过滤掉70%的噪音信号。","highlights":[{"text":"蜡烛定时机+指标定方向=概率倍增","color":"blue"},{"text":"单一工具盲点靠多工具互补消除","color":"purple"}]},{"t":"成交量验证蜡烛信号","c":"所有反转蜡烛形态必须放量确认。看涨吞没缩量=不可靠反弹。锤子线放量=主力接盘。","detail":"成交量是蜡烛信号的判官。放量意味着大资金参与、方向真实；缩量意味着散户行为、方向不可持续。Nison强调：没有量配合的蜡烛形态，失败率超过50%。","highlights":[{"text":"无量的蜡烛信号=不可靠的噪音","color":"red"}]}]},{"title":"第4章·多时间框架蜡烛分析","level":"推荐","points":[{"t":"三周期共振法则","c":"周线定战略方向→日线找反转信号→小时线精确入场。三个周期蜡烛信号同向=最高胜率。","detail":"周线出现锤子线=大周期底部信号，日线出现看涨吞没=中周期确认，小时线突破=精确入场点。三重时间框架的蜡烛信号共振，是Nison体系中最强级别的交易信号。","highlights":[{"text":"周线锤子+日线吞没+小时突破=最强做多信号","color":"gold"}]}]}],"knowledge_cards":[{"t":"三山颈线测量公式","c":"头部最高点到颈线的垂直距离=突破后最小跌幅目标。不是精确价位而是最小目标区域，实际跌幅往往超过此值。到达目标后结合K线反转信号分批平仓。适用所有头肩类形态。","type":"formula"},{"t":"蜡烛+指标双重确认法则","c":"看涨蜡烛信号出现后，检查RSI是否底背离、MACD是否金叉、成交量是否放大。三者至少满足两项才入场。单一蜡烛形态胜率仅55-60%，双重确认可提升至75%以上。这是Nison进阶体系的核心——决不只靠一根K线做决策。","type":"rule"},{"t":"反击线识别要点","c":"牛市反击线：①前一根为长阴线②当日跳空低开③当日收于前日收盘附近④形成长阳实体。放量则信号更强。与刺透形态区别：反击线收盘更接近前日收盘，且跳空幅度更大，反映更剧烈情绪反转。","type":"concept"}],"quotes":["最好的交易信号来自多种技术工具的共振，而非单一形态。","成交量是所有蜡烛图信号的最终裁判——没有量，形态就是空壳。","学会识别反转蜡烛形态只是入门，学会等待确认信号才是进阶。"],"practice":["多指标共振策略","三周期蜡烛信号扫描","成交量确认复盘"]},{"id":"b03","title":"股市趋势技术分析","author":"Edwards/Magee","category":"技术分析","stage":2,"diff":3,"hours":20,"summary":"技术分析圣经。系统阐述趋势理论、支撑阻力、头肩、双重顶底、三角形等经典形态。","chapters":[{"title":"第1章·趋势与支撑阻力","level":"必修","points":[{"t":"趋势的本质定义","c":"上升趋势=高点不断抬高+低点不断抬高。下降趋势=高点不断降低+低点不断降低。结构不破坏则趋势延续。","detail":"健康上升趋势中，每次回调的低点必须比上一次回调的低点更高——这是趋势存活的底线。一旦低点不再抬高（形成更低低点），就是趋势可能转向的第一个预警信号，此时应提高警惕而非立即反向。","highlights":[{"text":"趋势=高点和低点的结构，不是主观感觉","color":"gold"}]},{"t":"支撑与阻力互换原则","c":"被突破的支撑变阻力，被突破的阻力变支撑。这是技术分析中最重要的形态原则，没有之一。","detail":"支撑被跌破后，原先在此买入的人全部被套——当价格反弹回该区域时，套牢者急于解套卖出，形成新的阻力。同理，阻力被突破后，突破者会在此区域护盘，形成新支撑。这一角色互换是判断突破有效性的核心逻辑。","highlights":[{"text":"支撑阻力互换=技术分析最重要的形态原则","color":"gold"},{"text":"突破后回踩原阻力变支撑=最佳加仓点","color":"green"}]}]},{"title":"第2章·头肩顶底形态","level":"必修","points":[{"t":"头肩顶完整结构","c":"左肩(放量上涨)→头部(量减创新高)→右肩(量更小反弹无力)→跌破颈线(必须放量)=确认反转。","detail":"成交量递减是最关键的验证：左肩量最大、头部量次之、右肩量最小——说明买盘逐步衰竭。颈线跌破时放量超过20日均量1.5倍则真突破概率超80%；缩量跌破则有50%概率是假突破，需等待反抽确认。","highlights":[{"text":"成交量递减=买盘衰竭，是头肩顶的内核","color":"gold"},{"text":"颈线突破+放量>1.5倍均量=真突破概率>80%","color":"green"}]},{"t":"头肩底——底部的镜像","c":"左肩(放量下跌)→头部(量缩创新低)→右肩(量增反弹)→突破颈线(放巨量)=确认底部反转。","detail":"头肩底与头肩顶的关键差异：底部突破颈线时成交量必须显著放大——这是主力进场的确凿证据。底部颈线常向上倾斜（头肩顶颈线通常水平或略向下），突破后回踩颈线是极佳加仓机会。","highlights":[{"text":"头肩底颈线突破必须放巨量=主力进场铁证","color":"green"}]}]},{"title":"第3章·三角形与旗形中继","level":"必修","points":[{"t":"对称三角形突破逻辑","c":"高点越来越低+低点越来越高→波动收敛后必然突破。上升三角形大概率向上、下降三角形大概率向下。","detail":"对称三角形是中性的——方向由突破决定。但上升三角形（水平上边+上升下边）反映买方在越来越高的位置接盘，突破向上概率约75%。三角形内成交量应递减，突破时放量确认。三角形宽度的60-75%处最易突破。","highlights":[{"text":"三角形收敛后必然突破，方向看突破价位","color":"gold"}]},{"t":"旗形——最可靠中继形态","c":"快速大幅运动后出现1-3周小幅反向整理，波动区间窄、成交量萎缩。整理结束原趋势恢复。","detail":"旗形是趋势中最值得交易的中继形态。旗杆长度可投影测量后续目标。关键特征：持续时间短(1-3周)、整理幅度小(不超过旗杆的38.2%)、成交量明显萎缩。旗形内反向交易是新手最常犯的错误——永远顺着旗杆方向做。","highlights":[{"text":"旗形=趋势中最可靠的中继形态，永远顺旗杆做","color":"green"}]}]},{"title":"第4章·双重顶底与矩形整理","level":"推荐","points":[{"t":"双重顶底的确认规则","c":"双顶=两次冲击同一阻力失败。需跌破中间谷底才确认——未破谷底前只是潜在双顶。量：右顶<左顶=可靠。","detail":"许多交易者看到两次冲高就急于做空，但真正确认是跌破中间谷底（颈线）之时。双顶形成期间右顶成交量明显小于左顶是最佳验证信号——说明第二次上攻时买方力量已衰竭。未破颈线的\"双顶\"可能只是矩形整理。","highlights":[{"text":"双顶确认=跌破中间谷底，未破前只是潜在形态","color":"gold"},{"text":"右顶量<左顶量=买方衰竭的最佳证据","color":"red"}]},{"t":"矩形——多空拉锯战","c":"价格在两条平行线间反复震荡。矩形内高抛低吸，突破后顺势追入。矩形越宽、持续时间越长，突破后行情越大。","detail":"矩形反映多空双方势均力敌的拉锯状态。区间内可做高抛低吸，但必须设止损在区间外。向上突破放量=真突破概率高；向下突破不一定需要放量——重力本身就会推动下跌。矩形高度投影=突破后最小目标。","highlights":[{"text":"矩形宽度=突破后最小目标距离","color":"blue"}]}]}],"knowledge_cards":[{"t":"头肩形态精确测量与确认","c":"头部到颈线垂直距离=最小目标跌幅/涨幅。真突破确认标准：①颈线外收盘②成交量>20日均量1.5倍③连续2日站稳颈线外。三项全满足确认概率>90%。假突破特征：缩量+当日拉回颈线内。","type":"formula"},{"t":"趋势跟踪四步法","c":"①画趋势线连接至少两个低点(上升)或高点(下降)②确认趋势线未被跌破③每次回调到趋势线附近寻找入场信号④趋势线被有效跌破(3%+连续2日)则离场。趋势线角度以30-45度为最佳，过陡则不可持续。","type":"rule"},{"t":"成交量-形态配合法则","c":"所有反转形态在突破关键颈线时必须放量确认，缩量突破大概率是假突破。中继形态(旗形/三角形)在整理期间应缩量，突破时放量。量价背离(价格新高但成交量递减)是趋势衰竭的最早期信号，应提前警惕。","type":"rule"}],"quotes":["趋势是你的朋友，直到它结束为止——识别趋势结束的信号比识别趋势本身更重要。","永远不要在支撑位买入，要等支撑位被测试并守住之后再买。","成交量是价格的燃料——没有燃料，任何运动都无法持续。"],"practice":["形态目标位测算练习","趋势线-成交量的双重验证","头肩形态颈线突破确认"]},{"id":"b04","title":"技术分析大全","author":"Martin Pring","category":"技术分析","stage":3,"diff":3,"hours":18,"summary":"Pring六维分析框架——趋势、动量、成交量、市场广度、情绪、周期。著名KST指标。","chapters":[{"title":"第1章·Pring六维分析框架","level":"必修","points":[{"t":"六个维度的协同逻辑","c":"趋势+动量+成交量+市场广度+情绪+周期六维共振。≥4个维度同向=高胜率入场信号。","detail":"单一维度都有盲区：趋势指标在盘整中反复打脸，动量指标在强趋势中过早离场，成交量可能被对倒操纵。六维框架的本质是用多维交叉验证消除单一维度的盲点——就像六盏灯同时亮起才确认方向。","highlights":[{"text":"六维共振=用多维交叉验证消除单一盲区","color":"gold"}]},{"t":"维度冲突时的处理原则","c":"趋势看多+动量看空=趋势可能进入修正，减仓不反手。趋势看空+动量看多=反弹做空机会。","detail":"维度冲突时，长期趋势维度权重最高——因为趋势是所有维度中最难逆转的。短期维度即使看多也不应逆趋势做多，而应视为趋势中的修正，等待修正结束顺应大趋势入场。","highlights":[{"text":"趋势维度权重最高，短期维度只调整仓位不改变方向","color":"green"}]}]},{"title":"第2章·KST动量指标深度解析","level":"必修","points":[{"t":"KST——多周期动量合成","c":"KST=四个不同周期ROC的加权合成。短周期捕捉快速转折，长周期确认趋势动量，合成后消除噪音。","detail":"KST(Know Sure Thing)是Pring独创的动量指标。其精妙之处在于将短、中、长、超长四个周期的变化率(ROC)加权合成一条线，短周期敏感捕捉转折、长周期稳健确认趋势——相当于内置了多时间框架分析。KST上穿信号线=买入。","highlights":[{"text":"KST=四周期动量合成，内置多时间框架","color":"blue"}]},{"t":"KST背离信号","c":"价格新高KST未新高=顶背离→减仓。价格新低KST未新低=底背离→关注反转。背离级别越大信号越强。","detail":"周线级别的KST顶背离是Pring体系中最强的卖出信号之一——反映长周期动量在衰竭。日线级别背离需要周线方向配合：日线底背离+周线KST向上=最佳做多信号；日线底背离+周线KST向下=只是反弹不是反转。","highlights":[{"text":"周线KST背离=最强级别的反转预警","color":"gold"}]}]},{"title":"第3章·市场广度与情绪指标","level":"必修","points":[{"t":"腾落线(AD Line)——上涨的质量裁判","c":"AD线=每日上涨家数-下跌家数的累计值。指数新高AD线未新高=顶背离→上涨由少数大盘股拉动。","detail":"指数创新高但AD线走平或下降，说明资金集中流向少数权重股，大部分股票实际上在下跌——这是牛市末期的典型特征。Pring将AD线视为市场内部健康的\"X光片\"，它揭示的是指数表面之下真实的市场宽度。","highlights":[{"text":"AD线=市场内部健康的X光片","color":"gold"}]},{"t":"VIX与逆向情绪指标","c":"VIX>30=恐慌→关注底部机会。VIX<15=过度安逸→警惕顶部。极端值才是有效信号，中间区域为噪音。","detail":"VIX在15-25区间震荡不提供有效信号。只有当VIX冲到30以上（恐慌）或跌到15以下（自满）时才有逆向交易价值。VIX尖峰+放量+反转K线=底部三确认。VIX持续走低+缩量上涨+顶背离=顶部预警。","highlights":[{"text":"VIX极端值才是信号，中间区域全是噪音","color":"red"}]}]},{"title":"第4章·周期理论与实战整合","level":"推荐","points":[{"t":"市场周期四阶段","c":"筑底→上涨→筑顶→下跌四阶段循环。每阶段对应不同策略：底部=分批建仓，上涨=持有加仓，顶部=减仓，下跌=空仓或做空。","detail":"Pring将经济周期与市场周期对应：债券见底→股票见底→商品见底→债券见顶→股票见顶→商品见顶。这一轮动顺序是六维框架中周期维度的核心。识别当前处于哪个阶段，决定了整体仓位和策略方向。","highlights":[{"text":"先识别周期阶段，再选择策略方向","color":"green"}]},{"t":"六维检查清单实战","c":"每日检查：①价格在200日线上/下？②KST方向？③成交量趋势？④AD线方向？⑤VIX位置？⑥周期阶段？≥4同向=执行。","detail":"将六维框架转化为可执行的每日检查清单，是Pring体系从理论到实战的关键一步。建议打印贴在交易桌前，每笔交易前逐项打勾。坚持一个月后你会发现，90%的亏损交易发生在少于4维共振的情况下。","highlights":[{"text":"每日六维打勾，少于4项同向不做","color":"purple"}]}]}],"knowledge_cards":[{"t":"六维共振完整检查清单","c":"①价格趋势：是否在200日均线上方且200日均线向上？②KST动量：KST是否上穿信号线或在信号线上方？③成交量：上涨放量下跌缩量？④市场广度：AD线与指数是否同步创新高？⑤VIX情绪：是否处于极端区域？⑥周期阶段：处于筑底/上涨/筑顶/下跌哪个阶段？满分6分，≥4分入场，≤2分空仓。","type":"rule"},{"t":"KST指标计算公式","c":"KST=ROC(10)×1 + ROC(15)×2 + ROC(20)×3 + ROC(30)×4，再取10日均线平滑。信号线=KST的5日均线。ROC=当日收盘价/N日前收盘价-1。四个周期分别对应短、中、长、超长趋势动量，权重递增反映长周期趋势的重要性更高。","type":"formula"},{"t":"多时间框架三周期原则","c":"长期(月线)：定战略方向——判断主要趋势和周期阶段。中期(周线)：定战术位置——在主要趋势中寻找次级回调的结束点。短期(日线)：定精确入场——在中周期到位后寻找K线反转信号。核心铁律：最短周期永远服从最长周期方向，绝不逆主要趋势交易。","type":"rule"}],"quotes":["技术分析是一门艺术，而非精确的科学——但通过多维度交叉验证，我们可以将概率大幅推向有利一方。","单一指标告诉你的只是一个视角，六个维度告诉你的才接近真相。","市场广度是价格的X光片——它揭示的是表面之下的真实健康状况。"],"practice":["六维共振每日检查","KST背离识别练习","AD线-指数背离判断"]},{"id":"b05","title":"以交易为生","author":"Alexander Elder","category":"交易心理","stage":3,"diff":2,"hours":12,"summary":"Elder博士将心理学与技术分析完美结合。三重滤网交易系统+2%和6%法则。","chapters":[{"title":"第1章·交易心理学——认识你的敌人","level":"必修","points":[{"t":"交易者最大的敌人是自己","c":"不是市场、不是庄家、不是信息劣势——是你内心的贪婪、恐惧和希望。三者构成三重亏损引擎。","detail":"Elder作为执业精神科医生，深刻洞察到：每个交易者内心都有一个疯狂的赌徒，他在亏损时怂恿你加仓翻本，在盈利时劝你早点落袋。识别这个内在赌徒的声音，学会在他出现时按下暂停键，是交易心理训练的第一步也是最关键一步。","highlights":[{"text":"最大敌人是内心的赌徒，识别他才能控制他","color":"gold"}]},{"t":"戒酒互助会(AA)模式应用于交易","c":"亏损成瘾与酗酒同源——都是冲动控制障碍。承认失控→寻求帮助→每日自省→帮助他人。","detail":"Elder将戒酒互助会的12步康复模式引入交易心理训练：①承认自己对亏损上瘾②相信有更高力量（交易系统）可以帮助你③每天做交易日志自省④当你能帮助其他交易者时，你自己的纪律也会加强。这个方法已被全球交易者社区验证有效。","highlights":[{"text":"亏损成瘾=冲动控制障碍，用AA模式戒断","color":"purple"}]}]},{"title":"第2章·三重滤网交易系统","level":"必修","points":[{"t":"三重滤网完整流程","c":"第一重(周线MACD)定多空方向→第二重(日线RSI)在回调中找入场区→第三重(小时线)精确击发。","detail":"与大多数交易者从日线直接入场不同，Elder要求先从更高时间框架开始。周线MACD柱线向上=只做多；然后等日线RSI跌到30以下（超卖）才是回调买入区；最后在小时线上找突破或反转信号精确入场。逆周线方向的交易绝对不做。","highlights":[{"text":"周线定方向→日线找回调→小时线入场，像狙击手瞄准","color":"green"}]},{"t":"滤网间的逻辑关系","c":"第一重滤掉逆势交易(最危险)。第二重滤掉追涨杀跌(最普遍)。第三重滤掉过早入场(最可惜)。","detail":"三重滤网每层解决一个核心问题：第一层保证你站在趋势正确的一边——这已经赢了一半；第二层保证你不是在贪婪驱动下追高，而是在恐惧造成的回调中冷静买入；第三层保证你的入场时机精确，减少持仓中的心理煎熬。","highlights":[{"text":"三层滤网=过滤贪婪、恐惧、急躁三种亏损源头","color":"blue"}]}]},{"title":"第3章·2%和6%资金管理法则","level":"必修","points":[{"t":"2%法则——单笔风险上限","c":"任何单笔交易的最大亏损不超过总资金的2%。10万账户→单笔最大亏损2000元。这决定了你的生存底线。","detail":"2%法则不是建议而是铁律。连续亏损10笔才亏20%，还有机会翻盘；若单笔亏10%，连续3笔就亏30%，需要赚43%才能回本。2%保护的是你继续留在牌桌上的权利。计算方式：仓位=(资金×2%)÷(入场价-止损价)。","highlights":[{"text":"2%=生存底线，连续亏10次还有80%本金","color":"gold"}]},{"t":"6%法则——月度亏损熔断","c":"当月累计亏损（含浮动亏损）达到总资金6%=立即停止所有交易，下月1号才能重新开始。","detail":"6%法则是2%法则的上级保护。即使每笔严格遵守2%，一个月连续亏损3笔=6%触发熔断。这阻止了交易者在连续亏损后情绪失控、报复性交易导致资金曲线断崖式下跌——这是业余与专业的分水岭。","highlights":[{"text":"6%月度熔断=阻止连续亏损后的情绪失控","color":"red"}]}]},{"title":"第4章·交易日志与自我复盘","level":"推荐","points":[{"t":"交易日志的核心要素","c":"每笔记录：①入场理由(三重滤网哪一重触发)②入场价止损价③出场价盈亏R④情绪评分1-5⑤事后评价。","detail":"Elder认为交易日志是交易者最重要的工具——比任何指标都重要。坚持3个月日志后复盘，你会发现模式：70%的亏损集中在情绪评分≥4的日子，80%的盈利来自严格按三重滤网执行。数据不会说谎，日志让你直面自己的问题。","highlights":[{"text":"交易日志>任何指标，数据让你直面真实自己","color":"purple"}]},{"t":"周末深度复盘四问","c":"①本周最好和最差交易分别是什么原因？②三重滤网执行率？③情绪触发点在哪？④下周改进一项什么？","detail":"日复一日只做表面记录，周末做深度分析。找到自己亏损的模式：是追高？不止损？还是盈利拿不住？聚焦改进一个问题，比同时试图改正所有问题有效10倍。Elder建议每季度只设定一个改进目标。","highlights":[{"text":"每季度只改进一个问题，专注带来突破","color":"green"}]}]}],"knowledge_cards":[{"t":"三重滤网完整执行流程","c":"Step1周线MACD柱：向上=只做多，向下=只做空。Step2日线RSI：做多等RSI<30(超卖回调)，做空等RSI>70(超买反弹)。Step3小时线突破：等待小时线突破前一根K线高点(做多)或低点(做空)后入场。止损设在小时线最近摆动低点/高点。","type":"rule"},{"t":"2%和6%资金管理公式","c":"单笔最大亏损=总资金×2%。用此反推仓位大小：仓位股数=(总资金×2%)÷(入场价-止损价)。月度累计亏损达6%熔断：当月所有未平仓浮动亏损+已实现亏损≥资金×6%→平仓所有头寸→停止交易至下月。此双重保护是Elder体系中最硬核的生存法则，也是其学员长期盈利的最关键因素。","type":"formula"},{"t":"情绪自评与交易决策矩阵","c":"每笔交易前给自己的情绪打分1-5分(1=极度冷静，5=极度亢奋/恐惧)。评分≥4时：仓位减半或不做。评分=5时：今日不交易。Elder的统计显示：80%以上的大亏发生在情绪评分≥4时。这不是软性建议——应像止损一样严格执行。","type":"rule"}],"quotes":["交易的目标不是赚钱，而是做正确的交易。赚钱只是正确交易的副产品。","一个没有记录的交易者就像一家没有账本的公司——你永远不知道自己是在赚钱还是在亏钱。","业余者想着能赚多少，专业者想着会亏多少。"],"practice":["三重滤网每日筛选","2%仓位计算练习","情绪评分+交易日志"]},{"id":"b06","title":"股票大作手回忆录","author":"Edwin Lefèvre","category":"交易心理","stage":1,"diff":1,"hours":10,"summary":"华尔街传奇交易员利弗莫尔的传记体小说。从5美元起家到做空1929年大崩盘赚取1亿美元。深刻揭示市场运行规律和人性弱点。","chapters":[{"title":"第1章·少年赌客：报价板上的智慧","level":"必修","points":[{"t":"最小阻力方向","c":"价格朝阻力最小的方向运行——利弗莫尔14岁发现的核心规律。观察方向而非预测方向。","detail":"在投机行用报价带记录价格时发现：当上涨比下跌容易时持续上涨。不预测市场应该怎么走——观察市场正在怎么走。","highlights":[{"text":"核心：价格沿最小阻力方向运动","color":"gold"},{"text":"规则：观察方向不预测方向","color":"green"}]}]},{"title":"第2章·华尔街初体验：止损觉醒","level":"必修","points":[{"t":"报价延迟的致命性","c":"同一个利弗莫尔——投机行无敌→真实市场亏光。环境变了优势消失。","detail":"成功可能是因为你处于有利环境中。改变环境结果完全不同。","highlights":[{"text":"警示：同样方法不同环境结果天差地别","color":"red"}]},{"t":"止损意识觉醒","c":"让你破产的不是判断错误，而是不认错。止损=保护交易资格。","detail":"每次大亏共同点：明知方向反了但不认错不断加仓摊平直到亏光。","highlights":[{"text":"核心：止损=保护继续交易的资格","color":"gold"}]}]},{"title":"第3章·关键点理论：等待的艺术","level":"必修","points":[{"t":"什么是关键点","c":"价格突破关键价位后趋势真正确认。在关键点入场=止损最窄+盈亏比最大。","detail":"关键点=多空力量质变位置。识别：前高前低、整数关口、均线位、密集成交区。","highlights":[{"text":"核心：关键点=多空力量质变位置","color":"gold"}]},{"t":"坐功比选股重要","c":"我赚大钱的秘诀从来不是我的想法，而是我的坐功。持仓时间决定利润大小。","detail":"入场→设止损→什么都不做→等趋势走完。频繁交易是最大利润杀手。","highlights":[{"text":"核心：持仓时间决定利润","color":"gold"}]}]},{"title":"第4章·金字塔加仓","level":"推荐","points":[{"t":"试探→确认→加仓","c":"小仓位试探→市场证实正确→逐步加仓。每笔加仓在盈利状态下进行。亏损仓位绝不补充。","detail":"流程：1/5仓位入场→价格证实→加仓→再证实再加。补仓=赌徒行为。","highlights":[{"text":"规则：只在盈利仓位加仓","color":"green"}]}]},{"title":"第5章·1929年世纪做空","level":"推荐","points":[{"t":"如何预见崩盘","c":"领先股不再创新高+市场广度恶化+成交量萎缩=道氏理论经典顶部信号。","detail":"不是预测崩盘日期——是判断市场结构恶化到不可持续。","highlights":[{"text":"核心：预判=观察市场结构而非预测日期","color":"gold"}]}]},{"title":"第6章·利弗莫尔的坠落","level":"必修","points":[{"t":"人性终极考验","c":"一生多次赚到数亿又亏光——违反了自己的交易规则。知道≠做到。","detail":"最大讽刺：亲手写的规则帮他赚数亿，也是他反复违反的见证。","highlights":[{"text":"核心：知道≠做到——执行力决定一切","color":"gold"},{"text":"警示：利弗莫尔失败比成功更有教育意义","color":"red"}]}]}],"knowledge_cards":[{"t":"最小阻力线法则","c":"价格沿最小阻力方向运动。判断：突破阻力轻松=向上，跌破支撑轻松=向下。回调低点不断抬高=向上趋势。","type":"concept"},{"t":"关键点交易法","c":"识别：前高前低+整数关口+长期均线+密集成交区。入场=关键点突破。止损=另一侧2-3%。放量=确认。","type":"rule"}],"quotes":["华尔街没有新鲜事，因为投机像群山一样古老。","让你破产的不是判断错误，而是不认错。"],"practice":["识别市场大趋势","耐心等待关键点"]},{"id":"b07","title":"交易心理分析","author":"Mark Douglas","category":"交易心理","stage":1,"diff":3,"hours":12,"summary":"概率思维重新定义交易本质。5个基本事实+7个持续一致思维原则——交易心理里程碑著作。","chapters":[{"title":"第1章·五大基本事实——重塑交易信念","level":"必修","points":[{"t":"事实一：任何事都可能发生","c":"市场不需要合理、不需要符合你的预期。接受不确定性是交易的第一课，也是最重要的一课。","detail":"Mark Douglas指出：大多数交易者的痛苦源于期待市场按照自己的分析走。但市场是独立的存在——它不欠你任何东西。真正接受\"任何事都可能发生\"意味着：不再为亏损感到愤怒，不再为踏空感到焦虑。从预测思维转变为概率思维，是专业交易者的起点。","highlights":[{"text":"市场不欠你任何东西——接受不确定性是第一课","color":"gold"}]},{"t":"事实二：不需要知道接下来会发生什么也能赚钱","c":"赚钱不靠预测准确，而靠概率优势+风险管理。你不需要预测每一笔的输赢，只需要正期望值系统。","detail":"这是对传统交易教育的颠覆。大多数人花90%精力试图预测市场方向，但Douglas说：你不需要预测。你只需要一个正期望值的系统，然后做足够多次——就像赌场不需要知道每一把的结果，但长期一定盈利。解放自己从\"必须预测对\"的枷锁中。","highlights":[{"text":"不需要预测也能赚钱——概率优势+足够次数=盈利","color":"gold"}]}]},{"title":"第2章·五大情绪陷阱与自我破坏","level":"必修","points":[{"t":"五大情绪陷阱识别","c":"贪婪(追高加仓)+恐惧(不敢入场)+希望(不止损)+愤怒(报复交易)+过度自信(放松纪律)。永远存在，只能管理。","detail":"Douglas将情绪陷阱类比为暗流——你看不到它们，但它们一直在水下拉扯你。关键是每天开盘前自我检查：今天我在哪个陷阱中？如果昨晚失眠因为持仓→恐惧模式，今天减半仓位。如果昨天大赚看不起市场→过度自信模式，今天严格执行止损不放松。","highlights":[{"text":"五大情绪陷阱永远存在，只能管理不能消除","color":"red"},{"text":"每天开盘前检查：今天我掉在哪个陷阱里？","color":"green"}]},{"t":"五种自我破坏行为","c":"①止损后反向重仓②盈利后加大仓位③连续亏损想翻盘④看别人赚钱追入⑤亏损后不敢再入场。每天收盘对照自查。","detail":"自我破坏的本质是：理智知道该怎么做，但情绪驱动下做了相反的事。Douglas建议将这些行为做成清单贴在屏幕旁，每天收盘后逐条打勾——有就打✓没有就打✗。坚持两周你会发现模式，看到模式就是改变的开始。","highlights":[{"text":"自我破坏清单=每天收盘打勾，看见模式就能改变","color":"purple"}]}]},{"title":"第3章·概率思维训练——从恐惧到自由","level":"必修","points":[{"t":"盈亏中性化训练","c":"不为盈利兴奋，不为亏损沮丧。每笔交易只是一个数据点。你的目标是执行系统，不是每一笔赚钱。","detail":"连续亏损3次不代表系统失效——可能是40%胜率系统中正常的概率分布。连续盈利3次也不代表你厉害——可能是运气。Douglas的核心洞见：当你把注意力从\"这笔赚不赚\"转移到\"这笔是否按系统做\"，交易就从折磨变成自由。","highlights":[{"text":"盈亏中性=关注执行质量而非单笔结果","color":"gold"}]},{"t":"20笔样本思维","c":"不评价任何单笔交易——以20笔为最小评估单元。20笔后计算：执行率？平均盈亏比？胜率？再决定是否调整。","detail":"单笔交易就像抛硬币——没有任何信息量。20笔才能初步看到概率分布。Douglas建议：永远不要因为1-3笔亏损就修改系统。至少20笔后做统计分析，50笔后才能对系统质量做出可靠判断。这个思维转变让大多数交易者从焦虑中解脱。","highlights":[{"text":"20笔=最小评估单元，单笔结果毫无意义","color":"blue"}]}]},{"title":"第4章·建立不可动摇的交易信念","level":"推荐","points":[{"t":"每日开盘信念仪式","c":"开盘前默念五大事实：①任何事都可能发生②不需预测也能赚钱③每笔随机④概率优势+次数=盈利⑤当下独一无二。","detail":"Douglas建议连续21天重复这个仪式——这是重塑潜意识所需的最小周期。前7天可能觉得机械可笑，14天后开始内化，21天后你会发现止损不再痛苦、盈利不再狂喜。这不是玄学——是神经可塑性：重复的行为会重塑大脑的默认反应。","highlights":[{"text":"21天信念仪式=重塑交易的潜意识反应","color":"purple"}]},{"t":"从结果导向到过程导向","c":"不再问\"这笔赚了多少\"，改问\"这笔是否按系统执行\"。过程正确结果亏损=成功。过程错误结果盈利=失败。","detail":"这是Douglas体系中最反直觉却最重要的转变。当你用过程而非结果评判自己时：①连续亏损不再打击自信（只要过程正确）②偶然暴利不再让你膨胀（因为知道过程有问题）。长期来看，过程导向的交易者不仅更快乐，结果也更好。","highlights":[{"text":"过程正确+结果亏损=成功。过程错误+结果盈利=失败","color":"gold"}]}]}],"knowledge_cards":[{"t":"五大基本事实每日宣言","c":"①任何事都可能发生——我不需要预测市场。②赚钱不需要知道接下来会怎样——我只需要概率优势。③任何一笔交易的结果都是随机的——我不为单笔盈亏焦虑。④概率优势+足够多次交易=长期盈利——我相信统计学。⑤每一刻市场都是独特的——我不对历史模式产生执念。连续21天每日开盘前默念。","type":"rule"},{"t":"自我破坏行为对照清单","c":"每天收盘后逐一检查：①止损后是否反向重仓？②盈利后是否加大仓位？③连续亏损是否想翻盘报复？④是否因为看到别人赚钱而追入？⑤亏损后是否因恐惧不敢再入场？有则标记并写下触发情境。每周统计高频触发项，作为下周重点改进目标。","type":"rule"},{"t":"概率思维的核心假设","c":"交易不是预测游戏而是概率游戏。任何交易系统的胜率只是长期统计值——40%胜率意味着每10笔大约亏6笔赚4笔，这是正常的不是系统失效。关键在于：赚的4笔平均盈亏比要大于亏的6笔。只要期望值为正，做足够多次就必然盈利。Douglas称之为\"交易者的自由\"。","type":"concept"}],"quotes":["任何一笔交易的结果都是随机的，长期获利靠的是概率优势加上足够多次的交易。","当你不再为单笔盈亏焦虑，你就获得了交易者真正的自由。","市场不会制造痛苦，是你对市场的期待制造了痛苦。"],"practice":["21天信念仪式打卡","自我破坏行为日检","20笔统计复盘法"]},{"id":"b08","title":"海龟交易法则","author":"Curtis Faith","category":"交易系统","stage":3,"diff":1,"hours":8,"summary":"传奇交易员Dennis招募23个普通人两周培训——创造超1亿美元利润。证明交易成功靠严格执行系统。","chapters":[{"title":"第1章·海龟实验——交易可以培养","level":"必修","points":[{"t":"史上最伟大的交易实验","c":"Richard Dennis招募23个零经验普通人→两周培训→每人100万美元→4年平均年化超80%。系统+纪律>天赋。","detail":"Dennis和合伙人Eckhardt打赌：交易能力是天生的还是可以培养的？Dennis用实验证明：挑选规则执行力强的人（不是天才交易员），教他们一套简单系统，给他们资金，结果创造了超过1亿美元的利润。这个实验改变了整个交易教育的范式——好系统+普通执行者=稳定盈利。","highlights":[{"text":"系统+纪律>天赋——普通人也能稳定盈利","color":"gold"}]},{"t":"海龟选人标准——什么特质最重要","c":"不选金融天才、不选数学博士。选的是：能遵守规则+能承受压力+能接受不确定性的人。","detail":"Dennis不关心智商和学历，他关心的是：给你规则你会严格执行吗？连续亏损5次你还敢做第6次吗？面对浮盈50%回撤到10%你能坚持不平仓吗？这三条——纪律、心理韧性、对不确定性的承受力——是海龟们成功的真正原因，也是大多数人失败的真正原因。","highlights":[{"text":"纪律+韧性+承受不确定性>智商+学历","color":"purple"}]}]},{"title":"第2章·唐奇安通道突破系统","level":"必修","points":[{"t":"突破入场——极简但有效","c":"价格突破过去20天最高价=做多。价格跌破过去10天最低价=做空(平多)。极简规则，不预测只跟随。","detail":"海龟系统的核心思想：不判断突破的真假，而是接受所有突破——用盈亏比覆盖假突破的亏损。大多数突破是假突破(胜率仅35-40%)，但真突破带来的趋势利润(盈亏比5:1以上)足以覆盖所有假突破的亏损并大幅盈利。你不需要判断真假——你需要接受假突破。","highlights":[{"text":"不判断真假突破——接受所有突破，用盈亏比覆盖","color":"gold"}]},{"t":"双系统并行——系统1和系统2","c":"系统1(短线)：20日突破入场+10日突破离场。系统2(长线)：55日突破入场+20日突破离场。同时运行。","detail":"海龟们同时运行两个系统：系统1捕捉快速趋势但假信号多，系统2捕捉大趋势但入场晚。两者资金分配各占50%，形成互补。当市场处于宽幅震荡时系统1亏损系统2也亏损；当大趋势来临时两个系统同时盈利——趋势利润远大于震荡亏损。","highlights":[{"text":"双系统并行=短线+长线互补，任何行情都有应对","color":"blue"}]}]},{"title":"第3章·ATR仓位管理——风险量化核心","level":"必修","points":[{"t":"N值/ATR——波动率量化","c":"N=20日平均真实波幅(ATR)。量化市场噪音→决定止损距离+仓位大小。高波动=小仓位，低波动=大仓位。","detail":"ATR的本质是用客观数字代替主观判断。不同品种波动率不同：原油日均波动3%、债券0.5%——如果都买相同金额，风险完全不同。ATR将所有品种归一化：仓位大小=账户资金×1%÷(ATR×合约乘数)，确保每笔交易风险一致。这是海龟体系最精妙的设计。","highlights":[{"text":"ATR=所有品种的风险统一度量衡","color":"gold"}]},{"t":"金字塔加仓法则","c":"价格每朝有利方向移动0.5N→加仓一次，最多加仓4次。首仓1单位→最多共5单位。只在盈利时加仓。","detail":"海龟的加仓是趋势跟踪利润的核心来源。在10元买入1单位→涨到10.5N加1单位→11N加1单位→11.5N加1单位→12N加1单位。成本逐步抬高但仓位逐步加大——大趋势中这种金字塔加仓创造的利润远超一次性建仓。亏损时永不加仓，只在盈利中放大。","highlights":[{"text":"只在盈利中加仓——亏损时绝不摊平","color":"green"}]}]},{"title":"第4章·纪律——海龟成功的唯一秘密","level":"必修","points":[{"t":"离开系统=崩溃","c":"海龟们独立交易后业绩大幅下滑——不是因为系统失效，而是开始凭感觉修改系统。纪律>聪明。","detail":"最讽刺的是：海龟们知道系统有效，但在经历连续亏损或巨大回撤时，大多数人做不到继续执行。他们开始过滤信号（\"这次突破看起来像假的\"）、调整仓位（\"这次少买一点\"）——结果错过了最大的趋势。成功不是找到一个好系统，而是严格执行一个系统。","highlights":[{"text":"坚持执行普通系统10年>不断切换聪明系统","color":"gold"}]},{"t":"面对回撤的心理韧性","c":"海龟系统最大回撤曾达40%+。Dennis说：如果你不能承受40%回撤，你就不能赚到100%的收益。","detail":"趋势跟踪的本质是用多次小亏损换取少数大盈利。但大盈利之间的等待期可能长达数月甚至一年，期间持续的假突破亏损让人怀疑系统是否已失效。Faith在书中坦陈：最难的不是学会系统，而是在连续亏损12次后仍然坚持做第13次——这才是海龟与其他人的真正区别。","highlights":[{"text":"连续亏12次仍坚持做第13次=海龟的真正秘密","color":"red"}]}]}],"knowledge_cards":[{"t":"ATR仓位精确计算公式","c":"TR=MAX(当日高-当日低, |当日高-昨日收|, |当日低-昨日收|)。N(ATR)=(19×前日N+当日TR)/20的指数平滑。仓位大小=(账户资金×1%)÷(N×合约乘数)。例如100万账户，螺纹钢N=50点×10元/点=500元，仓位=100万×1%÷500=20手。所有品种用同一公式统一风险。","type":"formula"},{"t":"趋势跟踪的盈亏比逻辑","c":"核心假设：①大多数突破是假突破(产生多次小亏)②少数突破演变为大趋势(产生少数大赚)③大趋势的利润远大于假突破的总亏损。海龟系统胜率仅35-40%，但平均盈亏比>4:1。期望值=0.375×4R-0.625×1R=+0.875R。正期望+多次执行=长期盈利。不追胜率追盈亏比。","type":"concept"},{"t":"海龟加仓规则","c":"首次建仓1单位。价格朝有利方向每移动0.5N加仓1单位，最多加至5单位。每单位止损设在2N以外。加仓后整体止损上移至最近加仓价的2N处。金字塔结构确保：行情越大仓位越大，但任何时点总风险不超过账户的固定比例。永不对亏损头寸加仓——只在盈利中放大。","type":"rule"}],"quotes":["好的交易是无聊的——如果你感到刺激，你可能已经偏离了系统。","交易不是脑力劳动，是体力劳动——严格执行一套规则，日复一日。","知道系统和执行系统之间的鸿沟，就是大多数人亏损的原因。"],"practice":["ATR仓位计算练习","唐奇安通道模拟回测","连续亏损后的纪律坚持"]},{"id":"b09","title":"道氏理论","author":"Robert Rhea","category":"市场理论","stage":2,"diff":2,"hours":10,"summary":"所有技术分析的理论基石。Charles Dow提出趋势三级别和三发展阶段。","chapters":[{"title":"第1章·道氏理论的三大基石假设","level":"必修","points":[{"t":"假设一：价格包容消化一切","c":"所有已知和未知信息——基本面、政策、情绪、内幕——都已反映在当前价格中。研究价格就是研究一切。","detail":"这是所有技术分析的逻辑起点。既然价格已经反映了所有人的所知所想所做，那么纯粹的价格分析就是最高效的市场研究方法。你不需要比市场知道更多——市场已经知道一切并给出了价格这个最终答案。道氏用这句话奠定了技术分析100年的哲学基础。","highlights":[{"text":"价格包容一切=技术分析的哲学基石","color":"gold"}]},{"t":"假设二：三种趋势级别","c":"主要趋势(年级别，持续1年以上)→次级趋势(月级别，修正主要趋势1/3到2/3)→小型趋势(周级别，随机噪音)。","detail":"三种趋势同时存在但方向可能不同。交易者首先要明确自己交易哪个级别：日线交易者不理会小时线波动（那是噪音），周线投资者不理会日线回调（那是正常修正）。级别混乱=判断与执行矛盾=亏损。道氏理论的核心应用就是统一交易级别。","highlights":[{"text":"三种趋势级别=统一交易框架，级别混乱=亏损根源","color":"gold"},{"text":"明确你的级别：日线看小时线是噪音，周线看日线是修正","color":"red"}]}]},{"title":"第2章·主要趋势的三阶段模型","level":"必修","points":[{"t":"牛市三阶段：怀疑→乐观→狂热","c":"第一阶段(吸筹)：聪明钱在悲观中建仓。第二阶段(参与)：趋势确认、散户追涨。第三阶段(派发)：聪明钱在乐观中出货。","detail":"底部放量不涨=吸筹阶段——聪明钱正在悄悄收集筹码，此时新闻面仍旧悲观。量价齐升=参与阶段——趋势被确认，媒体开始唱多，散户跑步入场。新高缩量=派发阶段——聪明钱正在把筹码倒给追涨的散户，新闻面一片乐观。识别阶段=知道自己在和谁交易。","highlights":[{"text":"熊市底部买入的人=牛市顶部卖出的人=同一批聪明钱","color":"gold"}]},{"t":"熊市三阶段：希望→恐慌→绝望","c":"第一阶段(派发)：聪明钱高位出货。第二阶段(恐慌)：趋势确认、散户割肉。第三阶段(绝望)：聪明钱在悲观中接盘。","detail":"熊市的三个阶段与牛市互为镜像。关键识别信号：派发阶段放量滞涨、恐慌阶段连续放量下跌、绝望阶段缩量阴跌+利空不断但跌不动。绝望阶段=聪明钱开始吸筹=下一轮牛市的起点。道氏理论的终极应用：在绝望中买入，在狂热中卖出。","highlights":[{"text":"绝望中买入+狂热中卖出=道氏理论终极应用","color":"green"}]}]},{"title":"第3章·指数互相验证与成交量","level":"必修","points":[{"t":"指数互相验证原则","c":"道琼斯工业指数和运输指数必须同步创新高/新低才确认趋势。单一指数突破=未确认=谨慎对待。","detail":"原版道氏理论要求工业指数和铁路（运输）指数互相验证——背后的逻辑是：生产必须与物流同步才说明经济真正向好。现代交易者可推广为：大盘指数+行业指数+个股三者同步，任一级别背离就是结构恶化的早期预警。三重背离=最强危险信号。","highlights":[{"text":"工业+运输同步=趋势确认，背离=谨慎","color":"gold"},{"text":"大盘+行业+个股三重验证=现代版道氏原则","color":"blue"}]},{"t":"量价关系的四象限法则","c":"①价涨量增=趋势健康持有②价涨量缩=动能衰减减仓③价跌量缩=正常修正观望④价跌量增=恐慌抛售回避。","detail":"道氏理论中成交量是确认价格信号的辅助工具——量在价先，成交量变化通常领先价格1-3天。天量天价、地量地价的规律在主要趋势转折点尤为可靠。但成交量不决定方向——价格趋势本身才是主线，量只是确认工具。","highlights":[{"text":"量在价先1-3天，成交量是预判不是决定","color":"green"}]}]},{"title":"第4章·道氏理论的实战应用","level":"推荐","points":[{"t":"收盘价——唯一客观的价格","c":"道氏理论只用收盘价判断趋势——日内高低点是噪音。只有收盘价反映市场最终的共识。突破/跌破以收盘价为准。","detail":"日内价格受情绪和算法交易影响极大，只有收盘价代表经过全天博弈后多空双方最终达成的价格共识。道氏的这一原则历经百年仍是最实用的过滤规则：所有趋势线突破、支撑阻力突破，都以收盘价确认为准——过滤了80%的假突破噪音。","highlights":[{"text":"只看收盘价——日内波动80%是噪音","color":"blue"}]},{"t":"道氏理论的三条实战铁律","c":"①趋势延续直到明确反转信号出现②只交易主要趋势方向③永远等指数互相验证后再行动。","detail":"Rhea在《道氏理论》中总结了这三条铁律：第一条让你拿住趋势不提前下车；第二条让你不做逆势交易（最危险的行为）；第三条让你不被单一指数误导。三条合在一起构成了一个完整的趋势跟踪框架——简洁但极其有效，是华尔街百年实践的结晶。","highlights":[{"text":"趋势延续直到反转信号出现——不猜顶不猜底","color":"gold"}]}]}],"knowledge_cards":[{"t":"道氏三趋势量化标准","c":"主要趋势：价格在200日均线上方且200日均线方向向上，持续时间通常1年以上。次级趋势：价格回调至50日均线附近但200日均线方向不变，回调幅度通常为主要趋势的1/3至2/3，持续时间3周至3个月。小型趋势：3-5天的随机波动，无交易价值，忽略。统一级别后再做判断。","type":"rule"},{"t":"量价四象限决策矩阵","c":"象限一(价涨量增)：趋势健康→持有/加仓。象限二(价涨量缩)：动能衰减→减仓/收紧止损。象限三(价跌量缩)：正常修正→观望/等待入场。象限四(价跌量增)：恐慌抛售→离场/做空。每日根据价格和成交量落在哪个象限调整策略。程序化思维替代主观判断。","type":"rule"},{"t":"牛市/熊市三阶段识别信号","c":"牛市：①吸筹阶段——底部放量滞跌、利空不跌、聪明钱建仓②参与阶段——突破关键阻力、量价齐升、媒体开始报道③派发阶段——高位放量滞涨、利好不涨、聪明钱出货。熊市则镜像：派发→恐慌→绝望。阶段识别=确定当前是该买、该持、还是该卖的最核心判断依据。","type":"concept"}],"quotes":["平均指数包容和消化一切——除了上帝的行为。","没有任何一种方法能够告诉你市场将走多远，但道氏理论能告诉你市场正在朝哪个方向走。","牛市中的回调是礼物，熊市中的反弹是陷阱。"],"practice":["三趋势级别画线练习","阶段识别(吸筹/参与/派发)","量价四象限每日标注"]},{"id":"b10","title":"艾略特波浪理论","author":"Frost/Prechter","category":"市场理论","stage":4,"diff":4,"hours":14,"summary":"5-3波浪模式+斐波那契比率。虽然争议大但提供理解市场心理节奏的独特框架。","chapters":[{"title":"第1章·波浪基本结构与三大铁律","level":"必修","points":[{"t":"5-3波浪模式","c":"完整周期=5浪推动(1-2-3-4-5)+3浪调整(A-B-C)=8浪。自相似性——任何级别都遵循5-3结构。","detail":"推动浪中1、3、5与主趋势同向，2、4为逆趋势修正。调整浪中A、C与修正方向同向，B为反向反弹。这种自相似的分形结构——分钟图上的5-3和年线图上的5-3遵循相同规则——是艾略特波浪理论的数学美感所在，也是其争议来源。","highlights":[{"text":"5-3=推动+调整=所有级别自相似","color":"gold"}]},{"t":"三大不可违反的铁律","c":"①2浪回调不跌破1浪起点②3浪不能是三浪中最短的③4浪不进入1浪价格区域（不重叠）。违反任何一条=必须重新数浪。","detail":"铁律是波浪理论的底线——违反一定错，不违反不一定对（有多种可能排列）。这三条铁律将无限的可能性大幅收缩，让数浪从\"怎么说都行\"变为有约束的科学。其中第3条（4不重叠1）是最常被违反的——一旦重叠说明之前的浪型判断有误。","highlights":[{"text":"三条铁律违反任一条=必须重新数浪","color":"red"},{"text":"铁律不保证对但保证不错——是最小可行约束","color":"green"}]}]},{"title":"第2章·斐波那契比率与目标测算","level":"必修","points":[{"t":"回调比率——找入场点","c":"2浪回调≈1浪的50%或61.8%。4浪回调≈3浪的38.2%或50%。回调到斐波那契位+出现反转K线=最佳入场区。","detail":"斐波那契不是精确价位而是目标区域。当价格回调到关键比率（如61.8%）附近，同时出现锤子线、看涨吞没等反转信号，再加上其他指标的背离确认——这个区域的入场胜率远高于随机入场。比率+形态+指标三重确认是最佳实践。","highlights":[{"text":"斐波那契=目标区域，非精确价位","color":"gold"}]},{"t":"延伸比率——找目标位","c":"3浪常见延伸=1浪的1.618倍或2.618倍。5浪目标≈(1浪起点到3浪终点)×0.618。在目标区域分批平仓。","detail":"3浪通常是推动浪中最长的一浪（因为铁律说它不能最短），常见长度是1浪的1.618倍甚至2.618倍。5浪长度常等于1浪，或等于1浪起点到3浪终点的0.618倍。到达目标区域后应分批止盈而非一次清仓——因为延展浪可能超出预期。","highlights":[{"text":"3浪常=1浪×1.618，5浪目标=通道上轨或0.618倍","color":"blue"}]}]},{"title":"第3章·各浪的特征与心理背景","level":"推荐","points":[{"t":"推动五浪的情绪温度计","c":"1浪(怀疑中起步)→2浪(恐惧回调)→3浪(共识形成最强)→4浪(获利了结震荡)→5浪(狂热冲顶缩量)。","detail":"每浪都对应集体情绪：1浪时大多数人还在怀疑\"只是反弹\"；2浪回调让抄底者恐慌；3浪突破关键位后共识形成、媒体唱多、散户涌入——这是最长最猛的一浪；4浪复杂震荡清洗跟风盘；5浪缩量冲高、散户狂热追入——聪明钱已在派发。识别情绪=知道在哪一浪。","highlights":[{"text":"3浪=共识形成+散户涌入=最长最强","color":"gold"},{"text":"5浪缩量+散户狂热=聪明钱正在出货","color":"red"}]},{"t":"调整浪的复杂性格","c":"调整浪比推动浪更复杂多变——锯齿形(5-3-5)、平台形(3-3-5)、三角形(3-3-3-3-3)。调整浪是最难数对的部分。","detail":"调整浪是波浪理论中最容易出错的部分。锯齿形调整陡峭而短促，平台形调整横向而持久，三角形调整收敛而漫长。一个实用原则：如果没有把握准确识别调整浪类型，就回到更大的时间框架——大级别的推动浪方向才是你该交易的方向。","highlights":[{"text":"数不清小级别调整浪？回到大级别沿推动方向做","color":"green"}]}]},{"title":"第4章·波浪理论的实战应用与局限","level":"必修","points":[{"t":"波浪通道——实战导航工具","c":"连接1浪终点和3浪终点画上轨→平行移到2浪终点得到下轨。5浪目标≈上轨。价格突破通道=趋势可能加速或终结。","detail":"波浪通道提供了比单纯斐波那契更直观的目标区域。在上升趋势中，价格通常运行在通道内——触及上轨是潜在5浪终点，触及下轨是有价值买入区。通道被突破（向上或向下）是重要的趋势变化信号，需要重新评估波浪计数。","highlights":[{"text":"波浪通道=最直观的目标和支撑阻力导航","color":"blue"}]},{"t":"波浪理论的实战铁则与局限","c":"铁则：①永远先确定大级别趋势方向②数不清时不交易③波浪+斐波那契+形态+指标四重确认。局限：主观性强、事后解释完美事前预测困难。","detail":"Prechter本人承认：波浪理论是概率工具而非确定性工具。最明智的使用方式：①与其他工具（趋势线、指标、成交量）结合使用②当多种计数可能时，选择与其他工具最一致的那种③数不清时宁愿不做。波浪理论提供的是框架而非答案——框架帮助你组织信息但不替你决策。","highlights":[{"text":"数不清时不交易——不交易也是重要决策","color":"red"},{"text":"波浪=框架组织信息，不替你决策","color":"purple"}]}]}],"knowledge_cards":[{"t":"推动浪铁律检查清单","c":"①2浪回调是否跌破1浪起点？(是=违反→重数)②3浪是否为1/3/5中最短的？(是=违反→重数)③4浪收盘是否进入1浪价格区域？(是=违反→重数)④1/3/5内部是否各自为5浪结构？⑤2/4内部是否各自为3浪结构？五项全满足=波浪计数大概率正确，进入下一步测算。","type":"rule"},{"t":"斐波那契比率速查表","c":"回调比率：2浪=1浪的50%或61.8%，4浪=3浪的38.2%或50%，B浪=A浪的50%、61.8%或78.6%。延伸比率：3浪=1浪的1.618、2.618倍，5浪=1浪的1.0倍或(1浪起点到3浪终点)的0.618倍，C浪=A浪的1.0、1.618倍。目标到后结合形态分批平仓。","type":"formula"},{"t":"艾略特波浪的哲学——群体心理的韵律","c":"5-3模式本质是对群体心理从怀疑→确认→狂热→幻灭循环的数学建模。推动浪=群体从分歧到共识的过程，调整浪=群体从共识回到分歧的过程。自相似性说明这种心理循环在所有时间尺度上都存在——从秒级的高频交易到世纪的超级周期。理解这一点比精确数浪更重要。","type":"concept"}],"quotes":["市场是按照自然法则运行的——而自然法则的核心是分形和比例。","当大多数分析师意见一致时，往往意味着趋势即将反转——因为推动趋势的分歧已经消失。","波浪理论给你的是一个概率框架，不是水晶球。数不清的时候，不交易就是最好的交易。"],"practice":["三大铁律数浪练习","斐波那契目标测算","波浪+指标共振确认"]},{"id":"b11","title":"威科夫方法","author":"David Weis","category":"市场理论","stage":5,"diff":4,"hours":12,"summary":"通过价量关系判断聪明钱动向。Spring弹簧+UTAD。理解市场微观结构利器。","chapters":[{"title":"第1章·追踪聪明钱的足迹","level":"必修","points":[{"t":"聪明钱vs散户——筹码交换的本质","c":"底部放量不跌=聪明钱吸筹(从散户手中接盘)。顶部放量不涨=聪明钱派发(把筹码倒给散户)。","detail":"威科夫体系的核心洞察：价格可以被操纵做出假象，但成交量无法隐藏。底部阴跌时突然放量止跌——这是聪明钱在大量接盘，散户在恐慌中交出筹码。顶部高位横盘放量却无法再创新高——这是聪明钱在对倒出货，散户在乐观中接走筹码。量在价先，量是聪明钱的足迹。","highlights":[{"text":"量在价先——成交量是聪明钱无法隐藏的足迹","color":"gold"}]},{"t":"复合操盘手(Composite Operator)","c":"威科夫把市场中所有聪明钱的集体行为抽象为\"复合操盘手\"——一个只买低卖高的理性主体。跟随他就是盈利。","detail":"不需要知道是公募、私募还是游资——把所有大资金的行为抽象为一个\"复合操盘手\"。他在底部吸筹、在拉升中测试、在顶部派发。你的任务不是预测他在做什么，而是通过价量关系识别他正在做什么，然后与之同步行动。","highlights":[{"text":"跟随复合操盘手=跟随市场中最聪明的资金","color":"purple"}]}]},{"title":"第2章·Spring弹簧与UTAD——终极反转信号","level":"必修","points":[{"t":"Spring(弹簧)=空头陷阱=最佳买入","c":"价格短暂跌破关键支撑后迅速拉回区间内。跌时放量+拉回更大量=诱空操纵确认。这是威科夫体系最强买入信号。","detail":"Spring的本质是主力制造恐慌：故意砸破支撑位引发散户止损盘涌出，然后大量接走这些廉价筹码并迅速拉回。量化识别标准：①跌破区间下沿②幅度在区间宽度的5%以内③1-3根K线内拉回④拉回时成交量大于跌破时。四项全满足=95%概率是操纵，反向买入。","highlights":[{"text":"Spring=主力制造恐慌诱空→反向买入","color":"gold"},{"text":"跌破+放量+快速拉回=95%概率是操纵","color":"green"}]},{"t":"UTAD(上冲回落)=多头陷阱=最佳卖出","c":"价格短暂突破关键阻力后迅速跌回区间内。假突破+快速反转+放量=诱多操纵确认。这是威科夫体系最强卖出信号。","detail":"UTAD(Upthrust After Distribution)是Spring的镜像：主力制造突破假象吸引追涨盘，触发空头止损和散户追多，然后大量出货导致价格迅速跌回。识别标准与Spring对称：①突破区间上沿②幅度<区间5%③1-3根K线跌回④跌回量>突破量。四项全满足=诱多确认，是最佳做空/卖出点。","highlights":[{"text":"UTAD=主力制造突破诱多→反向卖出","color":"gold"}]}]},{"title":"第3章·威科夫价格循环五阶段","level":"必修","points":[{"t":"完整的吸筹→上涨五阶段","c":"A(初步支撑/停止下跌)→B(吸筹区间/横盘)→C(Spring弹簧测试)→D(突破确认/趋势开始)→E(趋势延续)。","detail":"A阶段：下跌停止，出现初步支撑（放量止跌）。B阶段：价格在区间内震荡，聪明钱持续吸筹（缩量盘整或间歇性放量）。C阶段：Spring测试——故意砸破支撑制造恐慌，是最后一个陷阱也是最佳买点。D阶段：突破区间上沿放量确认，趋势正式启动。E阶段：趋势延续，可考虑加仓。识别当前处于哪个阶段=知道该做什么。","highlights":[{"text":"C阶段Spring=最佳买点，D阶段突破确认=趋势入场","color":"gold"}]},{"t":"派发五阶段——吸筹的镜像","c":"A(初步阻力/停止上涨)→B(派发区间/横盘)→C(UTAD上冲回落测试)→D(跌破确认)→E(下跌延续)。UTAD是最佳卖点。","detail":"派发过程的五阶段与吸筹完全对称。关键识别：B阶段高位横盘时成交量异常放大但价格不涨——这是派发最核心的特征。C阶段的UTAD测试是最佳做空时机——主力最后一次拉高出货后市场将进入下跌。威科夫方法的精髓：不追突破，等测试再入场。","highlights":[{"text":"高位放量不涨=派发核心特征→准备做空","color":"red"}]}]},{"title":"第4章·威科夫实战分析技术","level":"推荐","points":[{"t":"价量关系九宫格","c":"上涨放量=强势、上涨缩量=弱势。下跌放量=弱势、下跌缩量=强势。横盘放量=方向将出、横盘缩量=方向不确定。","detail":"将价格方向（涨/跌/横）和成交量（放量/缩量/正常）组合成九宫格判断矩阵。核心原则：放量支持的方向就是真实的方向；缩量方向的运动不可持续。此矩阵是威科夫方法中最简单实用的日常分析工具——每天花5分钟标注每根K线的价量组合，一个月后你的盘感会有质的飞跃。","highlights":[{"text":"放量方向=真实方向，缩量方向=不可持续","color":"blue"}]},{"t":"努力vs结果——威科夫最精妙的概念","c":"大量努力(高成交量)却只有微小结果(小实体K线)=努力无果=趋势衰竭信号。缩量却能大幅推进=阻力极小=趋势强劲。","detail":"这是威科夫方法中最被低估的概念。一根高成交量但实体很小的K线意味着：大量资金在博弈但价格几乎没有移动——多空激烈交锋但一方无法取胜。这通常出现在趋势转折点。相反，一根缩量长阳说明卖盘极轻、买方轻松推高价格——这是最强趋势的特征。","highlights":[{"text":"高量小实体=努力无结果=趋势衰竭","color":"gold"},{"text":"缩量长阳=阻力极小=趋势最强状态","color":"green"}]}]}],"knowledge_cards":[{"t":"Spring/UTAD量化识别四标准","c":"Spring(买入)：①价格跌破近期区间下沿②跌破幅度不超过区间宽度的5%③在1-3根K线内快速拉回区间内④拉回K线的成交量大于跌破K线的成交量。UTAD(卖出)：对称条件，向上假突破后快速跌回。四项全满足=95%概率是操纵行为，为威科夫体系最高置信度信号，可重仓入场。","type":"rule"},{"t":"威科夫吸筹五阶段识别","c":"A阶段(初步支撑)：放量止跌，出现长下影线或看涨吞没。B阶段(吸筹区间)：区间震荡，缩量为主间歇放量。C阶段(Spring)：跌破区间下沿后快速拉回，是最佳买点。D阶段(突破)：放量突破区间上沿，趋势确认。E阶段(趋势)：沿趋势运行，回调到支撑加仓。当前处于哪个阶段决定操作策略——A/B等待、C买入、D加仓、E持有。","type":"concept"},{"t":"努力vs结果分析法则","c":"对比每根K线的成交量(努力)和实体长度(结果)：①放量长阳=努力与结果一致，趋势强劲②放量小阳/十字星=大量努力微小结果，趋势可能衰竭③缩量长阳=极少努力巨大结果，卖盘极轻趋势最强④放量长阴=空方强劲。顶/底部区域出现'努力无结果'是最佳反转预警，配合Spring/UTAD使用效果更佳。","type":"rule"}],"quotes":["价格是结果，成交量是原因。研究原因比研究结果更能预判未来。","市场不是随机游走——聪明钱的行为会在价量关系中留下规律性的足迹。","大量努力却只有微小结果——这是市场告诉你趋势即将反转的方式。"],"practice":["Spring/UTAD形态识别","五阶段定位判断","努力vs结果日K标注"]},{"id":"b12","title":"笑傲股市","author":"William O'Neil","category":"选股策略","stage":4,"diff":2,"hours":12,"summary":"欧奈尔CAN SLIM选股法+带柄茶杯形态+7-8%止损铁律。研究100只超级牛股总结。","chapters":[{"title":"第1章·CAN SLIM七维选股法","level":"必修","points":[{"t":"CAN SLIM完整拆解","c":"C=当季EPS增长>25%。A=年度EPS增长>25%。N=新产品/新管理层。S=供需关系(流通盘小)。L=行业龙头(RS>80)。I=机构增持。M=大盘方向。","detail":"CAN SLIM是基本面和技术的完美融合。C和A确保公司业绩高速增长——这是牛股的发动机。N代表催化剂——新产品、新管理层或新市场是股价爆发的导火索。S和L关注供需和相对强度。I确认机构正在买入。M是最关键一条——即使前六条全满足，大盘熊市也绝对不能买入。欧奈尔研究100年超级牛股后得出：历史上的大牛股都满足CAN SLIM至少5条。","highlights":[{"text":"CANSLIM=基本面+技术面+资金面三位一体","color":"gold"},{"text":"M(大盘方向)是最重要的一条——熊市不买任何股票","color":"red"}]}]},{"title":"第2章·带柄茶杯形态——牛股发射台","level":"必修","points":[{"t":"带柄茶杯的精确量化","c":"先涨>30%→回调12-33%→杯底U型(非V型)→杯柄窄幅整理1-2周(回撤<10-15%)→突破杯柄高点放量=买入。","detail":"欧奈尔将艺术化的形态识别转化为精确的数字标准：杯深12-33%(太深=趋势破坏)、杯长7-65周、杯底必须U型(急促V型底=散户抢跑不可靠)、杯柄位于杯子上1/3处、杯柄回撤不超过10-15%、柄部成交量极度萎缩。突破杯柄高点时成交量必须大于50日均量的1.5倍。每条量化标准都源自对历史大牛股的统计。","highlights":[{"text":"杯深12-33%+杯长7-65周+杯底U型+突破放量1.5倍","color":"green"}]},{"t":"杯柄的精妙逻辑","c":"杯柄=最后的清洗——吓出最后一批不坚定的持有者。柄部缩量=卖压衰竭。柄部突破=筹码清洗完毕后的一致拉升。","detail":"杯柄是欧奈尔形态中最精妙的设计。它在杯子的右上角形成一个短暂的小幅回调(1-2周，幅度<10-15%)——这个回调清洗掉那些在杯子反弹中买入但意志不坚定的人。柄部成交量必须萎缩（说明卖压已尽），然后放量突破柄部高点——这是筹码锁定完毕、一致拉升的确认信号。没有杯柄的杯子可靠性打五折。","highlights":[{"text":"杯柄=最后的筹码清洗，无柄的杯子不可靠","color":"purple"}]}]},{"title":"第3章·7-8%止损铁律与卖出法则","level":"必修","points":[{"t":"7-8%无条件止损","c":"任何股票亏损达7-8%立即卖出——不管任何理由、不管大盘如何、不管基本面多好。这是欧奈尔从所有大亏中总结的唯一保护。","detail":"欧奈尔统计了自己的所有大亏损，发现它们都有一个共同特征：一开始只亏了7-8%时没有卖出。这个数字不是随意定的——当亏损超过8%，回本需要的涨幅越来越大(亏10%需涨11%、亏20%需涨25%、亏50%需涨100%)。7-8%止损是数学上的最优平衡点：足够宽以避免被噪音震出，足够窄以保护本金。违反这条铁律=迟早爆仓。","highlights":[{"text":"7-8%铁律止损=数学上的最优平衡点","color":"red"},{"text":"违反7%止损=所有大亏损的共同起点","color":"gold"}]},{"t":"卖出法则——什么时候止盈","c":"盈利20-25%时卖出（除非3周内达到则持有8周）。高位放量长上影、连续大涨后缩量加速、跌破50日线=顶部信号。","detail":"欧奈尔的卖出规则同样量化：大多数牛股从突破点上涨20-25%后会进入正常修正——此时应获利了结。例外：如果在3周内就涨了20%以上，说明这只股特别强势，应持有至少8周。顶部卖出信号包括：连续大涨后出现放量长上影线、连续缩量加速上涨（最后的疯狂）、跌破50日均线且放量。","highlights":[{"text":"盈利20-25%正常了结，3周内达到则持有8周","color":"green"}]}]},{"title":"第4章·欧奈尔市场方向判断","level":"推荐","points":[{"t":"大盘方向(M)是CAN SLIM的灵魂","c":"M(Market Direction)是CAN SLIM的第七条也是最重要的一条。大盘熊市时即使前六条全满足也绝不能买入任何股票。","detail":"欧奈尔研究发现：即使是最优质的牛股，在大盘熊市中也平均下跌30-50%。3/4的股票跟随大盘方向——逆大盘选股胜率极低。判断大盘方向的核心工具：①大盘指数是否在50日均线上方②跟进日(Follow-Through Day)——大盘反弹第4-7天放量上涨>1.7%=确认上升趋势。没有跟进日的反弹=不可靠。","highlights":[{"text":"跟进日=大盘反弹第4-7天放量涨>1.7%=趋势确认","color":"blue"}]},{"t":"完整CAN SLIM筛选流程","c":"Step1:E季度EPS>25%+A年度EPS>25%(筛到200只)→Step2:RS>80+机构增持(筛到50只)→Step3:识别杯柄/平底形态(筛到10只)→Step4:等突破买点+放量确认(最终1-3只)。层层过滤不妥协。","detail":"欧奈尔的筛选是一个严格的漏斗：第一层过滤掉97%的增长不够快的公司，第二层过滤掉没有主力资金关注的标的，第三层过滤掉形态不完美的股票，第四层只等最佳入场时机。整个过程可能2-3周才出现一只符合条件的标的——但一旦出现，往往是3:1盈亏比以上的高胜率机会。不妥协是关键。","highlights":[{"text":"四层漏斗层层过滤，2-3周才出一只标的","color":"purple"}]}]}],"knowledge_cards":[{"t":"CAN SLIM完整筛选漏斗","c":"Step1:当季EPS增速>25%+年度EPS增速>25%(全市场约200只达标)。Step2:RS值>80+近季度机构增持(约50只)。Step3:形态筛选——找带柄茶杯、平底、双底等突破形态(约10只)。Step4:等待精确买点——突破形态关键价位+成交量>50日均量1.5倍(最终1-3只)。每层不妥协是CAN SLIM的精髓。","type":"rule"},{"t":"7-8%止损数学原理","c":"欧奈尔统计：大多数牛股从突破点上涨20-25%后进入正常回调。盈亏比=22%:7%≈3.14:1。即使胜率只有40%，期望值=0.4×22%-0.6×7%=+4.6%正期望。7%止损的关键不是预测准不准，而是用数学确保长期正期望。亏损超过8%后回本难度指数级上升，7%是保护本金的最优阈值。","type":"formula"},{"t":"带柄茶杯形态量化标准","c":"①前期上涨>30%②杯深度12-33%(超过33%趋势破坏)③杯长度7-65周④杯底必须U型(非V型)⑤杯柄位于杯子上1/3处⑥杯柄回撤<10-15%持续1-2周⑦杯柄成交量极度萎缩⑧突破杯柄高点成交量>50日均量1.5倍。八条标准源自欧奈尔对1880年代以来所有超级牛股突破前形态的统计归纳。","type":"concept"}],"quotes":["你买的不是一只股票，而是一家公司——而且是市场上最好的那家公司。","在股市中，你的第一个损失往往是最小的损失。拖延止损是所有大亏损的共同起源。","整个投资生涯中，你能控制的只有一件事：亏多少钱。盈利交给市场，亏损掌握在自己手中。"],"practice":["CAN SLIM四层筛选","带柄茶杯形态识别","7%止损纪律训练"]},{"id":"b13","title":"通向财务自由之路","author":"Van Tharp","category":"资金管理","stage":3,"diff":3,"hours":14,"summary":"Van Tharp提出交易系统六大部分。R乘数概念彻底改变了专业交易者的资金管理方式。","chapters":[{"title":"第1章·R乘数——交易的统一度量衡","level":"必修","points":[{"t":"R=每笔交易的风险单位","c":"R=单笔交易愿意承担的最大亏损金额。赚了2R=这笔利润是风险的2倍。所有交易用R衡量才可比较。","detail":"Van Tharp革命性地提出：用R作为交易系统的统一度量衡——就像会计用\"元\"一样。一笔赚了5000元的交易和一笔赚了10000元的交易，如果前者风险是2000元(2.5R)后者风险是8000元(1.25R)，那么2.5R的交易质量远高于1.25R。R让你穿透绝对金额看到真正的交易质量。","highlights":[{"text":"R=统一度量衡——让所有交易可比","color":"gold"}]},{"t":"期望值=系统的质量评分","c":"系统期望值=平均每笔盈亏R乘数。目标>0.5R(每笔平均赚半个风险单位)。>1.0R为优秀。用R统计20笔后计算。","detail":"期望值=(胜率×平均盈利R)-(败率×平均亏损R)。例如胜率40%、盈2.5R、亏1R→期望值=0.4×2.5-0.6×1=+0.4R。任何正期望值系统，做足够多次就必然盈利。Van Tharp的核心论点：绝大多数交易者亏损不是因为入市方法不对，而是因为没有衡量过系统的期望值就盲目交易。","highlights":[{"text":"期望值>0=长期盈利，期望值>1R=优秀系统","color":"blue"}]}]},{"title":"第2章·头寸规模——决定命运的唯一变量","level":"必修","points":[{"t":"精力分配法则——60%在头寸","c":"入市策略只占系统重要性的10%+出场策略30%+头寸规模60%。但大多数交易者90%的时间花在寻找入市方法上。","detail":"Van Tharp做了一个震撼性的实验：随机入市+合理的头寸管理+正确的出场=可以盈利；完美的入市+糟糕的头寸管理=必然亏损。头寸规模决定了你在趋势中赚多少——100万账户遇到翻倍趋势，5%仓位赚5万，20%仓位赚20万，同样的趋势结果差4倍。头寸=财富杠杆。","highlights":[{"text":"头寸60%+出场30%+入市10%=真实权重","color":"gold"}]},{"t":"凯利公式——最优仓位数学解","c":"f=(bp-q)/b。b=盈亏比，p=胜率，q=败率。胜率50%+盈亏比2:1→f=25%。实战中取1/4凯利≈6.25%降低波动。","detail":"全凯利仓位=理论最优但波动极大（资金可能回撤50%+），很少有人能承受这种心理压力。Van Tharp建议取1/4凯利——牺牲一部分收益换取大幅降低的回撤。6.25%仓位在胜率50%盈亏比2:1的系统下，几乎不可能爆仓，且心理压力小到能坚持执行。活下来比最大化收益更重要。","highlights":[{"text":"全凯利=理论最优但心理不可承受，1/4凯利=生存优先","color":"red"}]}]},{"title":"第3章·交易系统六大部分","level":"必修","points":[{"t":"系统六大组件缺一不可","c":"①市场选择②头寸规模③入市④止损⑤出场⑥策略。任何一部分缺失都导致系统不完整，就像缺一个轮子的车。","detail":"Van Tharp将交易系统拆解为六个必须部分：选什么市场/品种（决定了机会池）、每次做多大仓位（决定赚多少）、什么时候入场（入场券）、错了怎么办（生存保障）、对了怎么出（锁定利润）、整体策略如何组合（多系统/多品种）。六者缺一不可——大多数\"系统\"其实只是一条入场规则，根本不是系统。","highlights":[{"text":"六部分缺一不可，只有入场规则≠交易系统","color":"gold"}]},{"t":"出场策略>入市策略","c":"出场决定盈亏比。好的出场让亏损有下限(止损)让盈利无上限(追踪止盈)。入市只是拿到入场券。","detail":"大多数人痴迷于找到\"精准\"的入场点，但Van Tharp证明：出场策略比入市重要3倍。一个好的出场体系由三部分组成：①初始止损（限制最大亏损=1R）②保本止损（浮盈到一定程度后将止损移至成本价）③追踪止盈（让利润奔跑，如移动均线或通道突破出场）。入场只是开始，出场才是结局。","highlights":[{"text":"出场决定盈亏比——入场只是门票","color":"green"}]}]},{"title":"第4章·打造你的个人交易系统","level":"推荐","points":[{"t":"系统必须匹配你的性格","c":"长线趋势跟踪不适合急性子。日内短线不适合慢性子。最好的系统不是收益最高的，是你最能坚持执行的。","detail":"Van Tharp强调：交易系统没有\"最好\"只有\"最适合\"。一个让你夜不能寐的系统，即使回测收益再高，你也执行不了——连续回撤时你会放弃它。选择系统前先问自己：你能承受多大回撤？你享受短线博弈还是长线持有？你喜欢频繁操作还是少动多看？答案决定你应该选择什么类型的系统。","highlights":[{"text":"你能坚持执行的系统=最好的系统","color":"purple"}]},{"t":"R乘数交易日志——持续进化的引擎","c":"每笔记录：入场价|止损价|1R价值|出场价|盈亏R乘数|是否按系统执行。月度统计平均R和胜率，季度评估系统。","detail":"Van Tharp的R乘数日志是系统迭代的核心工具。坚持3个月后：统计平均R>0.5说明系统可行，<0则需要检查是胜率问题还是盈亏比问题。同时标注每笔是否按系统执行——你会发现：按系统执行的交易平均R远高于违规交易。数据不会骗人，日志让你无法自欺。","highlights":[{"text":"R乘数日志=让数据取代自我欺骗","color":"blue"}]}]}],"knowledge_cards":[{"t":"凯利公式与仓位计算","c":"凯利公式：f=(bp-q)/b，其中b=盈亏比，p=胜率，q=1-p。例如胜率50%、盈亏比2:1→f=(2×0.5-0.5)/2=25%。意味着理论最优仓位为总资金的25%。实战取1/4凯利(约6.25%)可大幅降低回撤并保持正期望。仓位金额=总资金×f÷每单位风险金额。Van Tharp反复强调：保守仓位让你活得更久，而活得久是复利的前提。","type":"formula"},{"t":"R乘数交易日志模板","c":"每笔交易记录以下字段：①日期②品种③方向(多/空)④入场价⑤止损价⑥1R=入场与止损的差额⑦出场价⑧盈亏R乘数=(出场-入场)/1R⑨是否按系统执行(是/否)⑩情绪评分1-5。月度汇总：平均R乘数(目标>0.5R)、执行率(目标>90%)、触发6%熔断的天数。这是Van Tharp体系中最核心的自律工具。","type":"rule"},{"t":"系统六大组件的权重分配","c":"Van Tharp经大量回测得出的权重：头寸规模决定60%的长期业绩差异——同样的入市信号，不同仓位下收益差异可达数倍。出场策略占30%——止损决定了亏损下限、止盈决定了盈利上限，两者共同塑造盈亏比。入市策略仅占10%——只要期望值为正，随机入市配合正确的头寸和出场也能盈利。这个权重分配颠覆了99%交易者的认知。","type":"concept"}],"quotes":["你用什么方法入市根本不重要，重要的是你的仓位有多大、错了怎么办、对了怎么出。","交易系统不是找到圣杯，而是找到一套你能够日复一日坚持执行的正期望值规则。","获利不是靠预测，而是靠当趋势来临时你手上有足够大的仓位。"],"practice":["R乘数日志建立","凯利公式仓位计算","六组件系统检查"]},{"id":"b14","title":"走进我的交易室","author":"Alexander Elder","category":"资金管理","stage":4,"diff":2,"hours":12,"summary":"Elder将交易系统化为一套完整日常流程：盘前准备→执行→复盘。操作性最强著作。","chapters":[{"title":"第1章·专业交易者的完整一天","level":"必修","points":[{"t":"盘前15分钟仪式——切换大脑模式","c":"①检查隔夜外盘②确认当日财经日历③扫描自选股④确定今日交易方向⑤设定今日最大可亏损额。五步仪式化切换交易状态。","detail":"Elder强调：交易者一天中最关键的15分钟是开盘前的准备。这15分钟不是分析市场——而是把你的大脑从普通人模式切换到交易者模式。普通人模式=情绪化、从众；交易者模式=冷静、按计划。仪式感触发神经回路——坚持21天后，一到交易桌前大脑自动进入专注状态。","highlights":[{"text":"盘前仪式=大脑模式切换——普通人→交易者","color":"green"}]},{"t":"最佳交易时段法则","c":"开盘前30分钟只看不交易。黄金交易时段=开盘后30分钟-2小时。尾盘30分钟波动加大适合持仓调整。每天真正值得交易的时间只有2-3小时。","detail":"大多数业余交易者全天盯盘、频繁进出。Elder的数据显示：全天交易的人手续费和滑点吃掉大部分利润。专业做法是只在流动性最好、波动最有方向性的时段交易——A股开盘后30分钟消化隔夜信息，此后2小时方向最清晰。其他时间关掉屏幕做研究、复盘、锻炼。知道何时不交易>知道何时交易。","highlights":[{"text":"每天真正值得交易的时间只有2-3小时","color":"gold"},{"text":"开盘前30分钟只看不交易——消化而非冲动","color":"red"}]}]},{"title":"第2章·信号评分卡与入场纪律","level":"必修","points":[{"t":"信号评分卡——客观替代直觉","c":"评分维度：趋势方向(0-3分)+信号强度(0-3分)+盈亏比(0-2分)+成交量确认(0-2分)。总分≥7(满分10)才可入场。","detail":"Elder将主观判断转化为客观评分：趋势方向=周线MACD方向(顺趋势3分、逆趋势0分)；信号强度=日线RSI极端程度+蜡烛形态质量；盈亏比=潜在盈利/风险>2:1得2分；成交量=放量确认得2分。总分低于7分的\"机会\"一律放过。这个评分卡消除了\"我感觉可以\"带来的80%的劣质交易。","highlights":[{"text":"总分<7一律放过——客观评分取代主观感觉","color":"green"}]},{"t":"三重滤网在信号卡中的落地","c":"趋势方向=第一重滤网。信号强度=第二重滤网(回调到位+反转信号)。盈亏比+成交量=第三重滤网(精确入场)。","detail":"信号评分卡是为三重滤网系统定制的量化入场工具。趋势方向评分确保你顺大势（这是最重要的3分），信号强度评分确保你在回调后而不是追高中入场，盈亏比和成交量确保你有安全边际+市场确认。三者同时达标=三重滤网完全共振=可以扣动扳机。","highlights":[{"text":"评分卡=三重滤网的量化落地工具","color":"blue"}]}]},{"title":"第3章·收盘复盘——从经验到进化","level":"必修","points":[{"t":"每日收盘复盘四问","c":"①今天我遵守交易规则了吗？②我的信号判断对了吗？③我的情绪状态如何(1-5分)？④明天我要改进什么？","detail":"Elder认为不复盘等于不做体检——你不知道自己的交易在走向健康还是疾病。坚持一个月后你会发现规律：70%的亏损发生在情绪≥4的日子，80%的盈利来自评分≥8的交易。复盘的核心不是苛责自己而是发现模式——看到模式=改变的开始。数据是镜子，照出真实的你。","highlights":[{"text":"不复盘=不做体检——你不知道在走向健康还是疾病","color":"red"}]},{"t":"周末深度统计——发现你的盈亏DNA","c":"统计维度：按星期几、按时段、按品种、按情绪评分、按评分卡得分。找到你最容易赚钱和最常亏钱的模式。","detail":"日复盘看到现象，周复盘看到规律。Elder建议每个周末花2小时做深度统计：周几交易效果最好？哪个时段容易冲动？哪个品种适合你的节奏？情绪评分和盈亏的相关性？评分卡得分和盈亏的相关性？坚持一个季度你会发现自己的\"盈亏DNA\"——比如你是\"周一适合、周三回避、午后容易亏损\"的类型。顺应自己的模式比对抗它有效10倍。","highlights":[{"text":"周末深度统计=发现你的盈亏DNA","color":"purple"}]}]},{"title":"第4章·专业交易者的八条习惯","level":"推荐","points":[{"t":"八条习惯清单","c":"①固定作息②盘前/盘后仪式③只用可亏资金④每笔预设止损⑤不做无计划交易⑥坚持交易日志⑦定期回顾统计⑧保持身体锻炼。","detail":"Elder观察到：长期盈利的交易者不一定是技术最好的，但一定是习惯最好的。这八条习惯构成了交易者的基础设施——就像运动员的体能训练，它不直接创造利润但决定了你能在高强度环境中持续多久。其中最被低估的是⑧保持锻炼——身体状态直接影响决策质量，疲劳时做出的交易决策80%是亏损的。","highlights":[{"text":"长期盈利者=习惯最好的人，不一定是技术最好的","color":"gold"}]},{"t":"交易室环境设计","c":"交易桌只放交易必需——清除干扰源。屏幕布局：主屏=日线+小时线、副屏=周线+自选。手机推送到另一房间。","detail":"Elder的交易室原则：极简。桌面上只有交易设备和水——没有手机、没有新闻网站、没有社交软件。多屏幕布局遵循\"从大到小\"：最左边的屏幕显示周线（战略）、中间屏幕显示日线和小时线（战术）、右边屏幕显示自选股列表和委托。手机放到另一个房间——减少80%的无效盯盘和冲动交易。","highlights":[{"text":"手机放到另一个房间=减少80%的冲动交易","color":"green"}]}]}],"knowledge_cards":[{"t":"专业交易者完整日常流程","c":"盘前(15分钟)：①隔夜外盘②财经日历③自选股扫描④确定方向⑤设定最大亏损额。盘中：开盘30分钟只看不交易→黄金时段(开盘后0.5-2h)执行评分卡≥7的交易→其他时间关屏幕远离。盘后(15分钟)：复盘四问+记录日志。周末(2小时)：深度统计盈亏模式、评估系统、设定下周目标。坚持21天形成习惯。","type":"rule"},{"t":"信号评分卡量化标准","c":"趋势方向(0-3分)：周线MACD方向顺=3分、平=1分、逆=0分。信号强度(0-3分)：日线RSI极端+反转K线=3分、仅有RSI极端=2分、仅有K线=1分。盈亏比(0-2分)：>3:1=2分、2-3:1=1分、<2:1=0分。成交量(0-2分)：突破放量1.5倍均量=2分、放量但不达标=1分、缩量=0分。总分<7不做，≥8优。","type":"rule"},{"t":"业余vs专业的本质区别","c":"业余者：没有固定流程、凭感觉交易、全天盯盘、不做日志、只在亏损时学习。专业者：每天固定仪式、按评分卡执行、只在黄金时段交易、坚持日志复盘、每天精进1%。Elder指出二者最大区别不在技术而在习惯——专业者的日常流程保证了长期稳定的决策质量，业余者的随机性保证了长期稳定的亏损。","type":"concept"}],"quotes":["业余者等着交易来找他，专业者每天按照固定流程扫描市场。","交易室应该像手术室——干净、安静、没有干扰，因为你正在做的是切除自己账户中的亏损。","一天中最重要的工作不是在交易时段完成的，而是在交易开始前和结束后完成的。"],"practice":["建立交易日流程模板","信号评分卡实操","周末深度复盘统计"]},{"id":"b15","title":"证券分析","author":"Graham/Dodd","category":"价值投资","stage":6,"diff":5,"hours":25,"summary":"1934年出版价值投资奠基圣经。安全边际+内在价值+固定收益分析三支柱。巴菲特称其改变了他人生的两本书之一。","chapters":[{"title":"第1章·安全边际原理","level":"必修","points":[{"t":"价值投资的唯一护身符","c":"安全边际=内在价值-买入价格。价值1元的东西用0.5元买，即使估值偏差30%仍不会亏损本金。","detail":"安全边际的精髓不在于追求收益，而在于为错误预留空间。人性会犯错、估值会偏差、黑天鹅会降临——安全边际是唯一能穿越这一切的护身符。","highlights":[{"text":"核心：安全边际=为错误预留空间","color":"gold"}]},{"t":"定量与定性的双重边际","c":"定量边际=价格低于账面价值或清算价值。定性边际=护城河、管理层、行业地位提供的额外保护层。","detail":"格雷厄姆更重视定量边际，因为他经历过大萧条——定性优势可能在危机中一夜消失，但定量折扣永远存在。两者叠加是最强组合。","highlights":[{"text":"规则：定量边际优先，定性边际加分","color":"green"}]}]},{"title":"第2章·固定价值投资：债券分析","level":"必修","points":[{"t":"债券筛选的四项测试","c":"利息保障倍数>3倍+资产负债率<50%+市值/债务比+盈利稳定性。四项全过才值得持有。","detail":"原书近一半篇幅讲债券——这是被大多数投资者忽略的宝藏。债券分析教会我们：先确保不亏，再谈赚钱。股票分析的一切方法论都源于债券分析的严谨框架。","highlights":[{"text":"核心：债券分析的严谨性是股票分析的基石","color":"gold"}]},{"t":"优先证券的优先级思维","c":"先判断公司能否生存（债券偿付能力），再判断是否低估（股票投资价值）。这个顺序不能颠倒。","detail":"格雷厄姆教导：当你分析一家公司的股票时，先假装自己是一个债券持有人。如果债券持有人都不安全，股东就更危险。这一思维框架避免了无数踩雷。","highlights":[{"text":"框架：先判断偿付能力，再看投资价值","color":"green"}]}]},{"title":"第3章·普通股投资的分析框架","level":"必修","points":[{"t":"三要素估值模型","c":"内在价值=资产价值+盈利能力价值+成长价值。资产和盈利可量化，成长最不可靠——给最低权重。","detail":"格老对成长性极度保守。他认为未来的盈利增长本质上是投机而非投资。如果必须考虑成长，必须确保增长率有长达7-10年的历史数据支撑，且不能超过行业增长上限。","highlights":[{"text":"公式：内在价值=资产+盈利+成长（最小权重）","color":"gold"}]},{"t":"比较分析法","c":"同行业内至少对比5家公司：PE、PB、ROE、股息率、负债率。只买各项指标排名前2且显著低估的那只。","detail":"格雷厄姆从不凭空判断一家公司是否便宜——必须有可比基准。同类公司横向对比+历史数据纵向对比，双重验证后才能确认低估。这是避免价值陷阱的核心方法。","highlights":[{"text":"规则：横向5家对比+纵向7年验证","color":"green"}]}]},{"title":"第4章·资产负债表与清算价值","level":"推荐","points":[{"t":"净流动资产法（Net-Net）","c":"市值<流动资产-总负债=净流动资产价值。买价低于净流动资产的2/3，等于白捡公司还倒贴钱。","detail":"这是格雷厄姆在大萧条后发展出的终极保守策略。当股价跌破净流动资产时，意味着市场认为公司的固定资产和持续经营价值为负——这几乎不可能长期持续。巴菲特早期靠这一策略取得惊人回报。","highlights":[{"text":"公式：Net-Net=市值<(流动资产-总负债)×2/3","color":"gold"}]},{"t":"清算价值vs持续经营价值","c":"清算价值=现在就关门能拿回多少钱。持续经营价值=继续运营未来能赚多少钱。两者取较低者作为安全基准。","detail":"格雷厄姆从不预测未来。他只问：如果明天公司就破产，我的投资还安全吗？这种极端保守思维恰恰是价值投资者穿越周期的底层逻辑。先确保不会死，再考虑怎么活得好。","highlights":[{"text":"核心：以清算价值为底，盈利价值为翼","color":"gold"}]}]},{"title":"第5章·市场波动与投资心理","level":"推荐","points":[{"t":"区分投资与投机","c":"投资=经过透彻分析、保证本金安全、获得满意回报。三条缺一不可。投机=不符合以上任一条件的操作。","detail":"格雷厄姆不反对投机，但他坚持两者必须严格区分。他痛斥「把投机包装成投资」的行为——这是1929年大崩盘的根本原因，也是每一次泡沫的共同特征。你可以在投机账户赌一把，但绝不能让投资账户沾上投机。","highlights":[{"text":"定义：投资=透彻分析+本金安全+满意回报","color":"gold"}]},{"t":"价格的长期回归","c":"短期是投票机（情绪决定），长期是称重机（价值决定）。价格终将回归内在价值，但时间不可预测。","detail":"这句话虽出自格雷厄姆，但他补充了最重要的一点：价格回归的前提是企业价值确实存在。如果企业本身在毁灭价值，低价买入只是便宜地买了一堆废铁。验证价值存在比等待回归更重要。","highlights":[{"text":"核心：短期投票机，长期称重机","color":"gold"}]}]}],"knowledge_cards":[{"t":"安全边际三重计算","c":"安全边际率=(内在价值-买入价)/内在价值×100%，目标≥30%。内在价值取以下三者最低：①净流动资产价值②7-10年均EPS×(8-12倍PE)③账面价值×0.7。三重取最低是为估值偏差预留双重保护，宁可错过不可买贵。","type":"formula"},{"t":"固定收益证券检验清单","c":"投资级债券必须通过四道检验：①利息保障倍数≥3倍（息税前利润/利息费用）；②资产负债率≤50%；③市值不低于总债务的1.5倍；④过去7年中至少有5年盈利覆盖利息。任何一项不达标即降为非投资级，需更高的安全边际补偿。","type":"rule"}],"quotes":["投资的核心是用5毛钱买入价值1块钱的东西。","市场短期是一台投票机，但长期是一台称重机。"],"practice":["计算持仓安全边际率","用净流动资产法筛股"]},{"id":"b16","title":"聪明的投资者","author":"Benjamin Graham","category":"价值投资","stage":6,"diff":3,"hours":14,"summary":"巴菲特称「有史以来最好的投资书籍」。防御型vs进取型投资者的完整操作手册，市场先生寓言是投资心理学的巅峰隐喻。","chapters":[{"title":"第1章·防御型投资者的组合策略","level":"必修","points":[{"t":"50/50股债基准+再平衡","c":"股票与债券各占50%，每半年检查一次，偏离超过5%即调整。熊市债转股，牛市股转债——自动实现低买高卖。","detail":"这个被严重低估的策略年化收益6-8%，最大回撤不到15%。它不依赖任何预测能力——只需要纪律。格雷厄姆说：防御型投资者最需要的不是聪明，是不被情绪左右的耐心。","highlights":[{"text":"规则：50/50+半年度再平衡=自动逆向投资","color":"green"}]},{"t":"选股七条标准","c":"①足够规模②强劲财务③连续20年分红④10年EPS增长≥33%⑤PE<15⑥PB<1.5⑦PE×PB<22.5。七条全过才买。","detail":"格雷厄姆为不想动脑的防御型投资者设计了一套傻瓜筛选标准。看似严苛，但满足全部条件的公司几乎不可能破产——先立于不败，再求胜。随着时代变迁，标准可适度放宽，但严格筛选的精神不能丢。","highlights":[{"text":"规则：七条全过才买入，缺一不可","color":"green"}]}]},{"title":"第2章·市场先生寓言","level":"必修","points":[{"t":"狂躁抑郁的合伙人","c":"每一天市场先生都敲门报价。他情绪极不稳定：乐观时报天价，悲观时报地板价。你的权利是不理他，或者在极端价格时利用他。","detail":"这是投资史上最伟大的隐喻。大多数人被市场先生牵着鼻子走——他报高价就兴奋加仓，报低价就恐慌割肉。真正的聪明投资者把自己当成市场先生的老板：他来报价是他的事，接不接受完全由你决定。","highlights":[{"text":"核心：市场先生是仆人，不是主人","color":"gold"}]},{"t":"极端情绪的量化","c":"极度悲观=全民恐慌+成交量地量+利好不涨+PE处于10年最低分位。极度乐观=全民炒股+天量+利空不跌+PE处于10年最高。","detail":"格雷厄姆没有给出精确数字，但指出了方向。将市场情绪量化后，反向操作就变成了科学而非艺术。当所有信号指向极端，行动的概率优势最大——不需要精确择时，只需要在极端区域下注。","highlights":[{"text":"规则：极端情绪≥3个信号=反向行动","color":"green"}]}]},{"title":"第3章·进取型投资者的选股方法","level":"必修","points":[{"t":"四种操作模式","c":"①买低价普通股（低于净流动资产）②买特殊情况的套利机会③买被忽视的二线成长股④在熊市底部大举买入指数。","detail":"格雷厄姆警告：进取不意味着频繁交易——恰恰相反。真正的进取型投资者一年可能只做2-3笔交易。其余时间都在研究和等待。频繁交易是防御型投资者冒充进取型的致命错误。","highlights":[{"text":"核心：进取=深度研究不是频繁交易","color":"gold"}]},{"t":"相对低估法","c":"同行业找PE最低且ROE最高的公司。如果PE低于行业均值30%而ROE高于行业均值，则存在相对低估的套利空间。","detail":"这是一种介于防御型和激进型之间的方法——不需要对公司做绝对估值，只需要在行业内做相对比较。格雷厄姆称之为「不需要天才的判断力」。尤其适合那些知识面窄但深度深的投资者。","highlights":[{"text":"公式：PE<行业均值×0.7 + ROE>行业均值","color":"gold"}]}]},{"title":"第4章·基金、投顾与你","level":"推荐","points":[{"t":"指数基金的智慧","c":"大多数主动基金长期跑不赢指数——扣费后更是惨败。防御型投资者买低费率指数基金>雇用任何投资顾问。","detail":"格雷厄姆在1976年（指数基金诞生同年）就预见了被动投资的崛起。他直言：与其把钱交给一个你无法判断其真实水平的基金经理，不如直接拥有整个市场。这个判断比博格早了二十年。","highlights":[{"text":"核心：买指数=最聪明的防御策略","color":"gold"}]},{"t":"如何评估投资顾问","c":"①是否用「保证收益」话术→直接排除②是否公开全部历史业绩（含回撤）③收费结构是否鼓励过度交易④他自己是否跟投。","detail":"格雷厄姆在华尔街摸爬滚打数十年，深知这个行业的信息不对称。他总结的投资顾问筛选标准到今天依然适用——如果一个投顾经不起这四条拷问，你最好自己管钱。","highlights":[{"text":"警示：四问投顾，答不上来的别用","color":"red"}]}]},{"title":"第5章·安全边际：投资的中心思想","level":"必修","points":[{"t":"贯穿一切的原则","c":"安全边际不仅是估值公式——它是一种思维方式。债券需要利息覆盖倍数，股票需要价格折扣，分散化本身就是安全边际的一种形式。","detail":"全书最后一章压轴。格雷厄姆用安全边际把分散化、债券分析、股票估值、资产配置全部串在一起。投资中所有正确的决策最终都可以归结为：你是否为自己预留了足够的犯错空间。","highlights":[{"text":"核心：安全边际=投资世界的第一性原理","color":"gold"}]},{"t":"分散化=概率安全边际","c":"持有10-30只股票不是不自信——是承认自己会犯错。单只可能归零，组合中个别归零不影响整体。分散化是概率层面的安全边际。","detail":"格雷厄姆的分散化不是随意撒网。他要求每只股票都必须独立满足低估条件，不能因为买得多就降低单只标准。这是格雷厄姆分散化与盲目撒网的唯一区别。","highlights":[{"text":"规则：10-30只，每只独立满足低估标准","color":"green"}]}]}],"knowledge_cards":[{"t":"格雷厄姆数筛选法","c":"格雷厄姆数=PE×PB，当PE×PB<22.5时可能存在低估。现代改良版需附加两个条件：①ROE连续5年>10%以确保盈利质量②流动比率>1.5以确保偿债安全。单纯满足格雷厄姆数可能落入价值陷阱（企业持续恶化导致PE和PB看似低实则合理），必须结合盈利趋势判断。","type":"formula"},{"t":"防御型投资者年检清单","c":"每半年执行一次：①股债比例偏离目标≥5%→再平衡②组合中是否有亏损超30%且基本面恶化的个股→卖出③是否有连续两年不分红的个股→评估④总费率是否超过0.5%→换低费率产品⑤过去一年是否有追涨杀跌的情绪化操作→记录反思。这份清单帮助投资者把复杂决策简化为固定流程，用规则代替情绪。","type":"rule"}],"quotes":["投资的首要原则是不要亏钱，第二条是记住第一条。","投资者最大的敌人不是股市，而是自己。"],"practice":["制定个人50/50再平衡日历","用格雷厄姆数筛选A股"]},{"id":"b17","title":"炒股的智慧","author":"陈江挺","category":"实战","stage":1,"diff":1,"hours":8,"summary":"华人在华尔街从散户做到专业交易员的传奇。用中文写出最接地气的交易入门书——没有复杂公式，只有血的教训。","chapters":[{"title":"第1章·认清身份","level":"必修","points":[{"t":"投资者vs投机者","c":"两者思维方式完全不同。用投机心态做投资+用投资心态做投机=必亏。先明确身份再执行。","detail":"大跌时安慰自己长期投资不用止损——但当初明明是追涨投机。身份混乱=决策混乱=亏损。","highlights":[{"text":"核心：明确定位——投资和投机完全不同","color":"gold"}]}]},{"title":"第2章·止损是铁律","level":"必修","points":[{"t":"止损数学原理","c":"亏10%需涨11%回本，亏50%需涨100%，亏90%需涨900%。深度亏损=亏钱+亏时间双重损失。","detail":"公式：回本=1/(1-亏损率)-1。指数关系。100跌50需涨100%回——平均需3-5年。","highlights":[{"text":"公式：回本=1/(1-亏损率)-1","color":"gold"},{"text":"警示：深度亏损=亏钱+亏时间","color":"red"}]},{"t":"四种止损方法","c":"固定比例+技术止损+时间止损+资金止损。资金止损是底线——到了就砍不问理由。","detail":"固定比例最简单有效。时间止损常被忽视：买入理由'短期涨'但2周不涨=时机不对。","highlights":[{"text":"规则：资金止损是底线","color":"green"}]}]},{"title":"第3章·等待的艺术","level":"必修","points":[{"t":"空仓=最高境界","c":"不会空仓的人永远不会炒股。至少50%时间保持空仓或轻仓。","detail":"空仓=旁观者清醒。持仓=参与者判断力打对折。不是放弃机会是等待最好机会。","highlights":[{"text":"核心：空仓=区分专业和业余的关键","color":"gold"}]},{"t":"四个出手条件","c":"趋势明确+安全边际+盈亏比≥3:1+明确止损位。缺一不可。一年3-5次足矣。","detail":"全年做50次其中40次不符合=亏。筛选严格才能保证质量。","highlights":[{"text":"规则：四条件全满足才出手","color":"green"}]}]},{"title":"第4章·顺势而为","level":"推荐","points":[{"t":"不同市况不同策略","c":"牛市持股不动+熊市空仓+震荡市波段。永远不一招鲜吃遍天。","detail":"牛市高抛低吸=错过大趋势。熊市抄底=接飞刀。关键是根据环境切换策略。","highlights":[{"text":"规则：牛市持有→熊市空仓→震荡波段","color":"green"}]},{"t":"仓位决定心态","c":"单笔≤总资产4-6%。轻仓才能理性判断。满仓=丧失判断力。","detail":"没有后顾之忧的交易最理性。总资产20-30%入市×单笔20%=单笔4-6%风险。","highlights":[{"text":"规则：单笔≤总资产4-6%","color":"green"}]}]}],"knowledge_cards":[{"t":"止损数学","c":"亏损5%需5.3%回本,10%需11%,20%需25%,50%需100%,90%需900%。公式:回本=1/(1-亏损率)-1。","type":"formula"},{"t":"空仓的力量","c":"无明确判断时最好操作=不操作。至少50%时间空仓或轻仓。空仓=清醒,持仓=判断打折。","type":"rule"}],"quotes":["炒股其实就是炒自己。","在股市里，慢就是快。"],"practice":["止损设定实操","空仓等待的心态训练"]},{"id":"b18","title":"股市进阶之道","author":"李杰（水晶苍蝇拍）","category":"价值投资","stage":6,"diff":3,"hours":14,"summary":"A股本土价值投资的系统方法论。好行业×好公司×好价格三位一体，填补了经典价值投资理论在A股的本土化空白。","chapters":[{"title":"第1章·A股市场的独特性与规律","level":"必修","points":[{"t":"散户市+政策市的双重烙印","c":"A股散户交易占比长期超70%，远高于美股。流动性驱动>基本面驱动，货币政策拐点=市场拐点。先看宏观再看个股。","detail":"格雷厄姆的框架在美国好用，但在A股直接套用经常失灵。原因就在于A股的定价权不在基本面投资者手中——散户群体行为和货币政策的影响力远大于成熟市场。理解这套博弈规则是A股生存的前提。","highlights":[{"text":"核心：A股=流动性市，先看水再看鱼","color":"gold"}]},{"t":"政策先行，估值跟随","c":"产业政策支持→资金涌入→估值扩张→业绩兑现。四个阶段中，前两个阶段是A股最容易赚钱的窗口——但要警惕第三阶段后的估值回归。","detail":"A股每轮牛市的领涨板块几乎都与当时的产业政策高度相关。这不是巧合——政策决定了资金流向和盈利预期。聪明的投资者不猜测政策，但会观察政策落地后的产业趋势变化。","highlights":[{"text":"框架：政策→资金→估值→业绩，顺第一二阶段","color":"gold"}]}]},{"title":"第2章·市场底部与顶部的识别","level":"必修","points":[{"t":"底部五信号体系","c":"①破净股数>100只②成交额不足峰值10%③IPO大面积破发④身边无人谈论股票⑤利好不涨甚至高开低走。≥3个信号=底部区域。","detail":"不要等精准底部——那是神仙做的事。底部是一个区域，在一个区域里分批买入，成本自然摊平在低位。等所有信号都确认时，往往已经反弹了20%。","highlights":[{"text":"规则：五信号≥3=底部区域，分批建仓","color":"green"}]},{"t":"顶部三异常","c":"①全民荐股（出租车司机都在推荐）②天量成交且滞涨③垃圾股与绩优股同涨甚至垃圾更猛。三个异常同时出现=系统性风险。","detail":"顶部比底部更难判断——因为泡沫可以持续很久。但顶部三异常是A股历史上每轮牛市见顶时的共同特征。当身边从不炒股的人开始炫耀收益，就是该离开的信号。","highlights":[{"text":"警示：全民荐股+天量滞涨+鸡犬升天=顶部","color":"red"}]}]},{"title":"第3章·好行业的筛选标准","level":"必修","points":[{"t":"行业天花板的量化评估","c":"市场空间>千亿+当前渗透率<30%+政策支持+无颠覆性替代品。同时满足四项的行业才能进入候选池。","detail":"渗透率是最容易被忽略但最重要的指标。渗透率<10%=导入期（高不确定性高赔率），10%-30%=成长期（最佳投资窗口），30%-50%=成熟期（竞争加剧利润变薄），>50%=衰退期（只适合做周期）。","highlights":[{"text":"核心：渗透率10-30%的成长期是最佳窗口","color":"gold"}]},{"t":"竞争格局>行业增速","c":"一个年增长5%但寡头垄断的行业，比年增长30%但群雄混战的行业更容易出牛股。格局稳定=利润可持续=估值可持续。","detail":"太多投资者追逐高增长行业却亏了钱——因为高增长吸引大量竞争者涌入，每家都赚不到钱。李杰用空调行业（格力美的双寡头）vs共享单车（百团大战全军覆没）的对比，生动说明了格局比增速更重要。","highlights":[{"text":"规则：选格局稳定的慢行业，不选混战的快行业","color":"green"}]}]},{"title":"第4章·好公司的识别与商业模式","level":"必修","points":[{"t":"ROE杜邦三维拆解","c":"ROE=净利率×总资产周转率×杠杆倍数。高ROE的来源不同，公司质地天差地别。高净利率>高周转率>高杠杆。","detail":"高净利率驱动=品牌溢价或技术壁垒（茅台、恒瑞），可持续性最强。高周转驱动=运营效率（沃尔玛、美的），管理能力是关键。高杠杆驱动=金融或地产（银行、万科），周期性风险最大。买之前先搞清楚公司赚的是什么钱。","highlights":[{"text":"框架：净利率驱动>周转驱动>杠杆驱动","color":"gold"}]},{"t":"护城河的五种形态","c":"①品牌壁垒②技术专利③网络效应④规模成本优势⑤转换成本。一家好公司至少拥有其中一种且持续强化。","detail":"A股公司的护城河要格外警惕「伪护城河」：靠牌照垄断不是护城河（政策可改），靠关系拿单不是护城河（人事可换），靠风口爆发不是护城河（风停了就摔）。真正的护城河是竞争对手想模仿也模仿不了的。","highlights":[{"text":"警示：牌照、关系、风口≠真护城河","color":"red"}]}]},{"title":"第5章·好价格：估值与买入","level":"推荐","points":[{"t":"三重估值交叉验证","c":"①历史PE分位<30%+②PE<行业均值×0.7+③PE<盈利增速。三重同时满足=好价格。缺一不可。","detail":"单一估值指标都有缺陷：历史分位可能因基本面恶化而失真，行业对比可能忽略个股差异，PEG对周期股无效。三重交叉验证就是为了避免单一指标的盲区。","highlights":[{"text":"规则：三重估值交叉验证=好价格","color":"green"}]},{"t":"分批买入的铁律","c":"确认底部区域后至少分3批买入，每批间隔≥1个月或价格下跌≥5%。永远不要一把梭——你无法确定最低点。","detail":"李杰在书中反复强调一个看似矛盾的原则：对价值判断要自信，对市场判断要谦卑。你确信这只股票值100元，但不知道市场什么时候会涨到100元。分批买入就是为这个「不知道」预留的容错空间。","highlights":[{"text":"规则：分3批以上，间隔≥1个月或跌5%","color":"green"}]}]}],"knowledge_cards":[{"t":"A股底部五信号识别法","c":"五信号分别为：①全市场破净公司数量>100家②日均成交额低于过去一年峰值的10%③当月IPO首日破发比例>30%④日常社交圈中连续一个月无人主动聊股票⑤重大利好发布后股价高开低走或毫无反应。五个信号中出现三个或以上即可判断市场处于底部区域，应采取分批建仓策略。信号越多，底部确定性越高，但不必等全部出现再行动。","type":"rule"},{"t":"行业天花板与渗透率评估框架","c":"好行业需满足：可触达市场空间≥1000亿元、当前渗透率处于10%-30%的快速成长期、国家产业政策明确支持且无颠覆性替代技术出现。渗透率<10%为导入期高风险高回报、10%-30%为成长期最佳投资窗口、30%-50%进入成熟期竞争加剧利润收窄、>50%接近饱和只适合做周期性波段。对行业天花板的准确判断决定了持仓周期和预期收益率的上限。","type":"rule"}],"quotes":["买股票就是买公司，而不是买一串代码。","最怕的不是亏钱，是用错误的方法赚到了钱——因为你会继续错下去。"],"practice":["每周统计A股底部五信号","选3个行业计算渗透率区间"]},{"id":"b19","title":"股票大作手操盘术","author":"Jesse Livermore","category":"交易系统","stage":4,"diff":3,"hours":8,"summary":"利弗莫尔1940年亲笔撰写的交易规则手册，是其一生四次暴富又破产后的终极领悟。关键点买入法+金字塔加仓+价格记录法三大支柱。","chapters":[{"title":"第1章·关键点交易法","level":"必修","points":[{"t":"两种关键点的精确定义","c":"自然关键点=上升趋势中价格回调至前期支撑位企稳。延续关键点=价格突破长期盘整区间的上沿——这是最赚钱的信号。","detail":"关键点的本质是多空力量的第二次对决。第一次对决决定趋势方向，第二次对决确认趋势能否延续。盘整时间越长，突破后的爆发力越强。利弗莫尔从不抢跑——他等待价格自己证明方向正确后再入场。","highlights":[{"text":"核心：关键点=多空第二次对决的胜负手","color":"gold"}]},{"t":"关键点确认的三步验证","c":"①价格突破关键点②成交量显著放大（≥20日均量1.5倍）③突破后连续3根K线收盘未跌回。三步全满足=确认有效。","detail":"利弗莫尔受过太多假突破的伤后总结出这套验证流程。假突破的特征是放量后迅速缩量回归——真正的突破应该有持续的量能支撑。宁可错过真突破的前5%，也不冒险赌假突破的100%。","highlights":[{"text":"规则：突破+放量+3K确认=有效关键点","color":"green"}]}]},{"title":"第2章·金字塔式加仓策略","level":"必修","points":[{"t":"精确到数字的加仓规则","c":"初始仓位1单位→价格朝有利方向运行≥3个点后加1单位→再运行≥3点再加1单位→总仓位最多5单位。每次加仓后新止损=倒数第二次加仓价格。","detail":"利弗莫尔用精确的数字取代感觉——这是他从破产中学到的最惨痛教训。他最辉煌的交易都严格遵守这套数字规则，而每一次破产都源于放弃了规则、凭直觉加仓。数字让你无法自欺欺人。","highlights":[{"text":"公式：1→+3点→+1→+3点→+1→最大5","color":"gold"}]},{"t":"回调超过2/3=全平","c":"如果价格从最高点回调超过本轮涨幅的2/3，不管什么原因全部平仓。保护已到手的利润比追逐更多利润重要一百倍。","detail":"这个2/3规则是利弗莫尔风控体系的核心。它意味着：利润必须被保护，不能让它全部回吐。很多人从大赚到大亏的转折点就是没有执行类似的硬止损——总觉得会涨回来。利弗莫尔说：市场从不关心你的成本，它只会朝阻力最小的方向运动。","highlights":[{"text":"规则：回调超2/3全平，不论理由","color":"red"}]}]},{"title":"第3章·价格记录法与趋势感知","level":"推荐","points":[{"t":"六栏记录法","c":"手写表格设六栏：上升趋势、下降趋势、自然回升、自然回撤、次级回升、次级回撤。每日记录价格所属栏位，趋势转变一目了然。","detail":"今天有K线图，为什么还要学手写记录？因为手写的过程强迫你与市场对话——每一笔记录都是一次微型判断。当你亲手写下「从上升趋势转为自然回撤」时，你对趋势转换的敏感度远超看软件图表。","highlights":[{"text":"核心：手写=强制感知，不是记录是对话","color":"gold"}]},{"t":"双价格确认原则","c":"不仅要看收盘价，还要结合日内高低点。如果高低点同时抬高=强势延续，高低点同时下移=趋势反转，高低点方向背离=市场犹豫。","detail":"利弗莫尔的价格记录法最精妙之处在于同时跟踪高点和低点。单看收盘价可能会错过日内反转信号——高低点同时下移往往是趋势变盘的第一声警钟。","highlights":[{"text":"规则：高低点同向=趋势延续，背离=犹豫","color":"green"}]}]},{"title":"第4章·资金管理与交易纪律","level":"必修","points":[{"t":"永不摊平亏损","c":"第一笔交易亏损说明方向判断错误——此时唯一正确的操作是止损出局。加仓摊平=把错误放大，是通往破产的最快路径。","detail":"利弗莫尔用四次破产证明了一个真理：亏损的头寸不会因为你买得更多就变成正确的头寸。市场不会同情你——它只会奖励正确的人。当你的仓位出现亏损，市场已经告诉你：你错了。剩下的事就是认错。","highlights":[{"text":"铁律：亏损仓位永不补仓，只可止损","color":"red"}]},{"t":"利润储备金制度","c":"每次盈利后将50%的利润提取出账户，转入不可动用的储备金。这样即使后续连续亏损，也永远有东山再起的资本。","detail":"这是利弗莫尔用一生血泪换来的教训。他四次从零开始东山再起，但最后一次破产后没有钱再翻身——因为他把全部利润都留在账户里继续加杠杆。如果早建立利润储备金制度，他的人生结局可能完全不同。","highlights":[{"text":"规则：每次盈利提50%利润=永远有退路","color":"green"}]}]}],"knowledge_cards":[{"t":"金字塔加仓精确执行规则","c":"初始仓位为1个交易单位（单笔风险不超过总资金2%）。价格朝有利方向运行≥3个点（约3%）后加仓1单位，再运行≥3点再加1单位，总仓位最多不超过5单位。每次加仓后的新止损价设在倒数第二次加仓的成交价位置。价格从最高点回调超过本轮涨幅的2/3时，不论任何原因，全部仓位立即平掉。这套规则的数学基础是：始终让盈利仓位大于亏损仓位，同时确保任何单笔交易的亏损可控。","type":"formula"},{"t":"关键点识别与确认规则","c":"自然关键点出现在上升趋势中的回调低点，该位置必须是前一次上涨中多空激烈争夺的价格区间。延续关键点出现在价格突破盘整区间上沿时，盘整时间至少需要3周以上才有参考价值。突破确认需同时满足：①收盘价明确突破关键价位②当日成交量超过20日均量的1.5倍③突破后连续3根K线收盘不跌回关键点之下。假突破通常量能不足或迅速回撤，这三种特征能过滤掉70%以上的假信号。","type":"rule"}],"quotes":["投机是一项严肃的事业，而不是赌博。","市场永远不会错，但意见经常会错。"],"practice":["每日手写关键点价格记录","模拟金字塔加仓计算练习"]},{"id":"b20","title":"华尔街幽灵","author":"Arthur Simpson（幽灵）","category":"交易系统","stage":3,"diff":2,"hours":8,"summary":"匿名交易大师以对话体传授的三条幽灵法则。极简至极的三条规则，却直指交易中最本质的防守哲学——不亏比多赚重要一万倍。","chapters":[{"title":"第1章·法则一：只持有正确的仓位","level":"必修","points":[{"t":"未被证明正确=错误","c":"入场后如果在预定时间框架内（如N根K线）价格未朝有利方向运动，不管是否触及止损位，立即平仓。","detail":"这是幽灵法则中最反直觉的一条。传统交易者等止损触发，幽灵说：不赚钱就是错。时间的流逝本身就是一种成本——你的资金被占用了，机会成本在累积。这看似激进，实则是最深刻的对资金效率的尊重。","highlights":[{"text":"核心：不赚钱=错误，时间也是成本","color":"gold"}]},{"t":"时间止损的操作标准","c":"小时图入场后3根K线无利润→平仓。日线图3天未脱离成本区→平仓。周线图2周无方向→平仓。K线数量=你对这笔交易的信心度。","detail":"时间止损迫使你面对一个残酷事实：如果你的判断正确，市场应该很快给你正反馈。拖延本身就是市场在说「你的逻辑可能有问题」。大多数人亏损的根源不是方向错，是方向对了但时间不对——进去太早被洗出来。","highlights":[{"text":"规则：小时图3K不赚=错，日线3天=错","color":"red"}]}]},{"title":"第2章·法则二：正确时加码","level":"必修","points":[{"t":"盈利证实→放大仓位","c":"第一笔仓位出现浮动盈利且趋势确认后，才增加第二笔仓位。每笔加仓独立决策，止损独立设置。亏损仓位绝不对等加码。","detail":"法则二是法则一的自然延伸——既然已经被市场证明正确，为什么不让正确的人干更多活？这与大多数人的本能相反：散户习惯亏损后补仓摊低成本，幽灵教你在盈利后加仓放大收益。前者赌概率，后者顺趋势。","highlights":[{"text":"核心：被市场证明正确后才有资格加仓","color":"gold"}]},{"t":"加仓的时机与节奏","c":"首次加仓=突破关键阻力后回踩站稳。二次加仓=创出新高后缩量回踩前期高点。每次加仓量≤初始仓位，总仓位不超过初始的3倍。","detail":"幽灵的加仓不是冲动追高——每一次加仓都有明确的触发条件。市场必须先证明趋势延续，加仓才有合理性。最重要的是：每笔加仓都自带独立止损，即使最后一次加仓被止损，前两次的利润依然安全。","highlights":[{"text":"规则：每次加仓≤初始量，总仓位≤3倍","color":"green"}]}]},{"title":"第3章·法则三：巨量即出场","level":"必修","points":[{"t":"异常放量=聪明钱在行动","c":"当成交量突然放大至正常水平的2.5倍以上，无论此刻盈亏如何，立即平掉一半仓位。因为你不站在信息优势方。","detail":"巨量代表有大资金在行动——可能是利好前的吸筹，也可能是利空前的出货。作为散户，你永远不知道是哪一种。幽灵的智慧在于：我不需要知道原因，我只知道当大象在跳舞时，蚂蚁最好的策略是退到安全距离。","highlights":[{"text":"核心：巨量=大象跳舞，蚂蚁先撤","color":"gold"}]},{"t":"巨量后的二次入场策略","c":"巨量减半仓后观察：如果量能回归正常且价格维持趋势→补回仓位。如果价格反向突破1ATR→全部平仓。既不错过行情也不承受不确定性。","detail":"法则三不是永远退出——是暂时退到安全位置观察。如果巨量确实是主力的正常换手，量能回归正常后可以重新入场。如果是出货前的巨量假突破，你已经在半仓保护中锁定了大部分利润。进可攻退可守的最优策略。","highlights":[{"text":"规则：量能回归+价格持稳=补回，反向1ATR=全平","color":"green"}]}]},{"title":"第4章·幽灵的交易哲学：行为修正","level":"推荐","points":[{"t":"规则内化=改变本能","c":"三条法则本身不难理解——难的是执行。幽灵强调：不是理解了规则就学会了交易，是规则变成了你的肌肉记忆才算学会。","detail":"幽灵在书中反复强调一个观点：交易最大的敌人不是市场，是你的本能。人类本能是亏损后死扛、盈利后跑得快——刚好与赚钱需要的操作相反。三条法则本质上都是反本能训练，执行100次后才能内化。","highlights":[{"text":"核心：规则要内化成本能，不是懂就够了","color":"gold"}]},{"t":"每日交易复盘五问","c":"①今天有未证实的仓位吗？②盈利仓位加了吗？③遇到巨量处理了吗？④哪笔交易违反了法则？⑤明天如何改进？","detail":"幽灵最推崇的练习不是看图表——是每日复盘。五问直指三条法则的日常执行。坚持下去，你会发现自己违反法则的频率在下降，而盈利在增加。这比任何技术指标都有效。","highlights":[{"text":"规则：每日复盘五问=幽灵的刻意练习","color":"green"}]}]}],"knowledge_cards":[{"t":"时间止损量化规则","c":"根据交易时间框架设定时间止损：小时图交易者入场后3根K线内价格未产生≥0.3倍ATR的有利波动即平仓，5根K线内无明确方向也需退出；日线交易者3个交易日内价格仍未脱离成本区±1%需考虑减仓；周线交易者给予2周观察期。时间止损的本质是承认资金的时间价值和机会成本，防止资金被锁定在一笔不赚不赔的交易中而错过其他更好的机会。这条规则与价格止损互补，形成双重保护。","type":"rule"},{"t":"巨量识别与应对量化标准","c":"异常巨量的判定标准：当前K线成交量≥过去20根K线平均成交量的2.5倍，或超过过去50根K线中的单根最大值。一旦确认巨量信号，立即执行：①先平掉50%仓位锁定部分利润或限制亏损②观察后续1-2根K线，若量能回归正常水平且价格维持原有趋势方向，可重新补回仓位③若价格朝不利方向运行超过1个ATR，立即平掉剩余全部仓位。巨量出货的典型特征是放量后价格无力创新高或快速回落，而正常换手的巨量往往伴随价格继续沿趋势运动。","type":"rule"}],"quotes":["市场永远不会打败你，只有你自己能打败自己。","如果你说不清楚为什么持有这笔仓位，那就立刻平掉它。"],"practice":["每日检查未证实仓位并执行","巨量出现时练习半仓应对"]},{"id":"b21","title":"彼得·林奇的成功投资","author":"Peter Lynch","category":"选股策略","stage":6,"diff":2,"hours":12,"summary":"林奇掌舵麦哲伦基金13年年化29.2%的实战方法论。普通人用日常生活观察即可发现十倍股，六类股票分类法是选股的罗盘。","chapters":[{"title":"第1章·六类股票分类法","level":"必修","points":[{"t":"先分类再投资","c":"缓慢增长型（股息）、稳定增长型（逢低买涨30-50%卖）、快速增长型（最赚钱）、周期型（PE高买低卖）、困境反转型（高赔率）、隐蔽资产型（资产>市值）。","detail":"林奇说买股票前必须明确它属于哪一类——因为不同类型的买卖策略完全不同。用快速增长型的策略操作缓慢增长型=坐过山车后亏钱。类型搞错=策略全错。这是林奇体系的第一课，也是最被忽视的一课。","highlights":[{"text":"核心：不确定类型就不该买入","color":"gold"}]},{"t":"各类股票的买卖信号","c":"快速增长型：增速放缓=卖。周期型：PE最低时=买，PE最高时=卖。困境反转：债务解决=买，恢复正常=卖。","detail":"林奇发现散户亏损的最大原因不是选错股，是选对股后用错了策略。快速增长股的卖出信号不是涨多了——是增长率开始放缓。周期股的卖出信号PE最高时——因为那恰恰是盈利的周期性底部。逆向思维贯穿始终。","highlights":[{"text":"框架：每类股票有完全不同的买卖时钟","color":"gold"}]}]},{"title":"第2章·PEG估值与成长性评估","level":"必修","points":[{"t":"PEG=PE÷盈利增长率","c":"PEG<1=低估，=1=合理，>1.5=偏贵。但增长率必须是未来3-5年的预期增速而非历史增速——这是最大的陷阱。","detail":"30倍PE贵吗？如果公司每年增长15%，PEG=2，确实贵。如果增长40%，PEG=0.75，很便宜。PE本身没有意义——它必须和增长率配对着看。林奇说：任何不考虑增长率的PE分析都是耍流氓。","highlights":[{"text":"公式：PEG=PE÷未来3-5年预期增长率<1","color":"gold"}]},{"t":"增长率的质量验证","c":"真正的好增长=营收增长≈利润增长。如果营收增5%利润增30%=不可持续的成本削减。如果利润增5%营收增30%=扩张期的战略性投入。","detail":"林奇教你区分「真实的增长」和「伪增长」。伪增长常见于：一次性收益、财务技巧、压缩研发费用、变卖资产。这些增长不可持续，PEG再低也不能买。真实增长=营收和利润同步增长，且增长来源于市场需求而非会计魔法。","highlights":[{"text":"规则：营收和利润同步增长才是真增长","color":"green"}]}]},{"title":"第3章·日常生活选股法","level":"推荐","points":[{"t":"在你消费的地方发现牛股","c":"你最喜欢的餐厅、孩子上瘾的游戏、老婆必买的护肤品——你比华尔街分析师更早感知到这些公司的业务爆发。","detail":"林奇最著名的选股方法：从日常生活中发现投资机会。他在陪老婆逛购物中心时发现了The Limited（后来涨了数十倍），在孩子对某款电子游戏上瘾时发现了任天堂。普通消费者往往是产品爆发的第一见证人——比分析师早6-12个月。","highlights":[{"text":"核心：你比华尔街分析师更早感知消费趋势","color":"gold"}]},{"t":"业余投资者的独特优势","c":"基金经理受限于：①只能买大市值②不能集中持仓③季度排名压力④投资委员会限制。而你完全没有这些限制——这是你的不对称优势。","detail":"林奇一直在强调：业余投资者不是专业投资者的弱者——恰恰相反，你的灵活性和不受限制的信息渠道是专业基金经理梦寐以求的。问题是大多数业余投资者在模仿基金经理的玩法而不是发挥自己的优势。","highlights":[{"text":"核心：灵活性+生活感知=业余者的不对称优势","color":"gold"}]}]},{"title":"第4章·财务指标快速检视清单","level":"必修","points":[{"t":"避开危险信号的十个问题","c":"①现金>负债吗？②PEG<1吗？③机构持股<30%吗？④内部人在买吗？⑤负债/权益<50%吗？⑥存货增速<销售增速吗？⑦自由现金流为正吗？⑧应收账款增速<销售增速吗？⑨利润率稳定或上升吗？⑩公司业务乏味吗？","detail":"林奇偏爱「乏味」的业务——殡葬、废品处理、基础零件制造。这些行业没有新竞争者涌入，龙头公司可以持续稳定赚钱。反过来，他对热门行业避之不及：激光、生物科技、AI——因为竞争者太多，没有一家能持续赚到超额利润。","highlights":[{"text":"规则：十问至少七答「是」才考虑买入","color":"green"}]},{"t":"现金头寸的价值","c":"每股净现金=每股现金-每股负债。如果每股净现金占股价的30%以上，等于你买股票打了七折——其余资产和白送的利润等于免费。","detail":"这是林奇最爱用的估值小技巧。一家股价20元的公司如果每股净现金8元，意味着你实际只花了12元买入它的业务。如果这家公司每年还能赚2元，你的实际买入PE只有6倍——安全边际极大。林奇在克莱斯勒上靠这一招赚了数十倍。","highlights":[{"text":"公式：每股净现金/股价>30%=七折买入","color":"gold"}]}]},{"title":"第5章·买卖时机与组合管理","level":"推荐","points":[{"t":"买入前必答五问","c":"①这公司做什么的我能用三句话讲清楚吗？②它属于六类中哪一类？③我准备持有多久？④什么情况下必须卖出？⑤最坏情况下可能亏多少？","detail":"林奇说：如果你不能用蜡笔在三句话内向一个十岁孩子解释清楚这家公司是做什么的，那就不要买。这不是贬低你的智商——是在保护你。无法简单解释的业务=你无法真正理解=无法判断好坏=赌博。","highlights":[{"text":"规则：三句话讲不清楚业务=不买","color":"red"}]},{"t":"组合的动态再平衡","c":"理想组合=3-10只股票，涵盖至少3种不同类型。每季度检视：把表现最差的1只和最该卖出的1只调出，换入2只新的候选标的。","detail":"林奇管理的麦哲伦基金曾持有1400只股票——但他承认那是规模太大导致的不得已。对个人投资者，他强烈建议集中持有3-10只深度研究过的股票。分散化不是目的，深度研究才是。少于3只风险集中，多于10只研究不透。","highlights":[{"text":"规则：3-10只+至少3种类型=最优组合","color":"green"}]}]}],"knowledge_cards":[{"t":"PEG估值三步法","c":"第一步：估算公司未来3-5年盈利复合增长率——必须以营收增长和行业空间为锚，不能用历史数据简单外推，周期股和亏损股不适用PEG。第二步：计算PEG=当前PE÷预期增长率，PEG<0.75=显著低估可重仓，0.75-1.2=合理估值可持有，>1.5=估值偏高应减仓。第三步：交叉验证——确认增长率不是由一次性收益、削减研发或变卖资产驱动的伪增长，营收增速和利润增速应基本同步，且增长率不超过行业天花板的合理上限。","type":"formula"},{"t":"六类股票买卖对照表","c":"缓慢增长型：估值低+股息率>5%买入，基本面恶化或估值泡沫卖出。稳定增长型：PE处于历史低位买入，上涨30-50%分批卖出。快速增长型：PEG<1+增速加速买入，增速放缓至行业均值卖出。周期型：PE处于历史最高分位（盈利底部）买入，PE降至历史最低（盈利高峰）卖出。困境反转型：债务重组方案获批买入，恢复正常盈利后卖出。隐蔽资产型：市值<净现金+固定资产买入，资产价值被市场充分反映后卖出。类型判断错误会导致完全反向的操作——这是林奇体系中最致命的错误。","type":"rule"}],"quotes":["你完全可以在理发的时候发现一只十倍股。","股票投资不是脑外科手术——常识比高深的理论更管用。"],"practice":["用六类分类法分析持仓股","计算持仓每只股票的PEG"]},{"id":"b22","title":"战胜华尔街","author":"Peter Lynch","category":"选股策略","stage":6,"diff":2,"hours":12,"summary":"林奇复盘麦哲伦基金13年年化29.2%的实战记录。21个经典选股案例+25条黄金法则，从克莱斯勒到沃尔沃，揭示业余投资者如何战胜专业机构。","chapters":[{"title":"第1章·25条黄金法则：林奇的投资戒律","level":"必修","points":[{"t":"投资你了解的东西","c":"不买你无法用一句话说清业务模式的公司。你的职业和日常生活就是最好的调研起点。","detail":"林奇强调：业余投资者最大的优势不是更聪明，而是可以只关注自己真正理解的少数领域——而基金经理被迫覆盖几百只股票。你在工作中看到的供应商、在商场里观察到的客流、孩子热衷的品牌，都可能比华尔街分析师更早发现牛股。","highlights":[{"text":"核心：只投能用一句话说清业务的公司","color":"gold"},{"text":"优势：业余投资者可以只聚焦理解的领域","color":"green"}]},{"t":"六类股票不同策略","c":"缓慢增长型吃股息、稳定增长型逢低买、快速增长型最赚钱、周期型PE最高买最低卖、困境反转型高赔率、隐蔽资产型资产>市值。","detail":"最致命的错误是把快速增长型当缓慢增长型持有——坐过山车后回到原点。不同类型的买入和卖出信号完全不同：快速增长型看增长放缓即卖，周期型看PE最高时（利润低谷）才买。类型搞错=策略用错=必亏。","highlights":[{"text":"核心：六类股票=六套完全不同的买卖策略","color":"gold"},{"text":"警示：类型搞错=策略用错=必然亏损","color":"red"}]}]},{"title":"第2章·麦哲伦基金实战：13年29%的秘密","level":"必修","points":[{"t":"高频换手≠投机","c":"林奇年换手率300%但同时持有1400只股票。核心逻辑：不断把资金从确定性低的公司转移到确定性高的公司。","detail":"外界批评林奇换手率太高，但他认为这是资产配置优化的自然结果——每周研究新公司，发现比持仓中某只更好的就替换。重点不是换手率高低，而是每次调仓是否提升了组合质量。他的持仓中有一半以上持有时间超3年。","highlights":[{"text":"核心：换手不是目的，优化组合质量才是","color":"gold"},{"text":"规则：新发现更好的才换，不为换而换","color":"green"}]},{"t":"集中+分散的平衡术","c":"前10大重仓占30%仓位坚定持有，其余1300+只小额试探。重仓=确定性+轻仓=关注列表。","detail":"林奇的天才之处：重仓股是他高度确信的标的（如克莱斯勒、房利美），小额持仓相当于付费观察——持有一点才更有动力深入跟踪。一旦小额持仓证实了自己，就逐步加仓进入重仓梯队。这既保证了集中优势又避免了过早重仓的风险。","highlights":[{"text":"策略：重仓确信+轻仓试探=进可攻退可守","color":"blue"},{"text":"规则：轻仓=付费观察，确认后逐步加仓","color":"green"}]}]},{"title":"第3章·在生活中发现10倍股","level":"必修","points":[{"t":"逛街就是调研","c":"L'eggs丝袜（超市货架发现）、Dunkin' Donuts（咖啡好喝）、沃尔沃（瑞典出差看到满街跑）——都是日常观察找到的牛股。","detail":"林奇最有名的案例之L'eggs：妻子从超市买回丝袜，他发现包装精美且货架被抢购一空。调研后发现这是全美增长最快的丝袜品牌——母公司Hanes股价后来涨了10倍。你不需要彭博终端，逛超市、接送孩子、出差旅行，到处都是调研机会。","highlights":[{"text":"核心：超市货架=最好的选股终端","color":"gold"},{"text":"方法：看到火爆商品→查母公司→研究基本面","color":"green"}]},{"t":"乏味行业出大牛股","c":"殡葬服务（SCI）、垃圾处理（WM）、汽车配件——越乏味越没人关注→越可能被低估→越是牛股温床。","detail":"热门行业吸引大量分析师和竞争者，利润薄、估值高。而殡葬业、废物处理、零配件这些「无聊」行业——没有分析师覆盖、没有媒体炒作、没有新竞争者涌入，龙头公司可以默默提价、稳定增长。林奇说：'如果一个行业让你昏昏欲睡，那可能就是一座金矿。'","highlights":[{"text":"核心：越乏味的行业越可能是牛股温床","color":"gold"},{"text":"反向思考：热门行业=高估值+激烈竞争=陷阱","color":"red"}]}]},{"title":"第4章·买卖时机的艺术","level":"推荐","points":[{"t":"理想买入特征","c":"①公司名字枯燥/业务乏味②分拆上市③机构不持股无分析师覆盖④内部人大量买入⑤公司回购股票。≥3条=强烈买入信号。","detail":"分拆上市是林奇最爱的买入场景——母公司把子公司分拆给股东，华尔街通常不关注这种'小而麻烦'的公司，股价被严重低估。内部人买入和公司回购说明最了解公司的人在用真金白银投票。五种信号叠加意味着：好公司+没人关注+内部人看好。","highlights":[{"text":"核心：五种买入信号叠加=最佳击球区","color":"gold"},{"text":"规则：≥3条信号同时出现=强烈买入","color":"green"}]},{"t":"不同类型的卖出信号","c":"快速增长型：增长放缓即卖。周期型：PE最高(利润低谷)买、PE最低(利润巅峰)卖。困境反转：成功反转后卖。","detail":"林奇强调：没有永远持有的股票，卖点取决于类型。快速增长型公司在增长从50%降到20%时就该卖——即使公司还很好。周期型要在行业最悲观（PE最高时）买、最乐观（PE最低时）卖。最悲剧的是在快速增长型上用周期型的卖出逻辑。","highlights":[{"text":"核心：卖点永远取决于股票类型而非绝对价格","color":"gold"},{"text":"警示：最怕用错类型的卖出逻辑","color":"red"}]}]}],"knowledge_cards":[{"t":"林奇六类股票全矩阵","c":"①缓慢增长型：年增2-4%，吃股息，PE低，涨30-50%卖。②稳定增长型：年增10-12%，逢低买，涨30-50%卖。③快速增长型：年增20-50%，最赚钱，PEG<1买，增长放缓卖。④周期型：PE最高时（利润低谷）买，PE最低时（利润巅峰）卖。⑤困境反转型：高赔率，破产风险解除时买，成功反转后卖。⑥隐蔽资产型：资产>市值，发现即买，价值兑现即卖。类型搞错=策略用错=必亏。","type":"rule"},{"t":"林奇选股五问清单","c":"每笔交易前必须回答：①我能用一句话说清这家公司做什么吗？②它属于六类中的哪一类？③我计划持有多久，什么情况下卖出？④最坏情况可能亏多少？⑤为什么华尔街没有发现这个机会？五问全部答出方可买入，任何一问含糊=不买。这是林奇管理1400只股票而不失控的核心方法。","type":"rule"}],"quotes":["投资你了解的，不了解的股票就像在黑暗中掷飞镖。","股票投资不是脑外科手术，简单的方法往往最有效。"],"practice":["六类股票分类练习","日常生活中的牛股发现训练"]},{"id":"b23","title":"巴菲特致股东的信","author":"Warren Buffett","category":"价值投资","stage":6,"diff":3,"hours":14,"summary":"巴菲特60年投资思想精华集结。护城河、安全边际、浮存金、管理层评估、市场先生——价值投资的完整体系。","chapters":[{"title":"第1章·护城河：持久竞争优势的评估","level":"必修","points":[{"t":"护城河的五大来源","c":"品牌（可口可乐）、专利/特许权（医药）、网络效应（Visa/Mastercard）、规模优势（沃尔玛）、转换成本（微软）。≥2条突出=宽护城河。","detail":"巴菲特说护城河像城堡周围的河——越宽越好，但也要持续加宽。可口可乐的品牌让它在全球180个国家都有忠实消费者。Visa和Mastercard的双边网络效应：商户越多→信用卡越有用→持卡人越多→商户越必须接受→自我强化循环无人能打破。评估方法：想象你有100亿美元能否打败这家公司？答'能'=无护城河。","highlights":[{"text":"核心：护城河=用100亿也打不垮的竞争优势","color":"gold"},{"text":"方法：五来源≥2条突出=宽护城河","color":"green"}]},{"t":"护城河的动态评估","c":"静态护城河终将被填平。关键看企业是否持续加宽护城河——技术变革是最大的护城河杀手。","detail":"巴菲特最惨痛的教训：投资纺织厂伯克希尔——看似有规模优势，但技术变革让海外竞争者轻易跨越护城河。后来他总结：'当一个行业发生剧烈技术变革时，投资的风险极高。'评估护城河必须动态看：5年后这条河是更宽了还是正在被填平？","highlights":[{"text":"核心：护城河必须动态评估，静态=自欺欺人","color":"gold"},{"text":"警示：技术变革是护城河的头号杀手","color":"red"}]}]},{"title":"第2章·能力圈与安全边际","level":"必修","points":[{"t":"能力圈：知道边界比知道内容更重要","c":"巴菲特每天读500页持续扩大能力圈，但绝不踏出圈外半步。'重要的是知道你不知道什么。'","detail":"90年代末科技狂潮中，所有人都嘲笑巴菲特'过时了'。但他说：'我们不懂科技，所以不投。这不是说科技股不好——是我们没有能力评估它们。'宁可错过100个机会也不投一个看不懂的。三年后互联网泡沫破裂，巴菲特的'过时'成了最聪明的策略。","highlights":[{"text":"核心：知道你不知道什么 > 知道你知道什么","color":"gold"},{"text":"规则：宁可错过机会也不要投看不懂的","color":"green"}]},{"t":"安全边际的三层含义","c":"①价格安全边际：内在价值的50%以下买入。②业务安全边际：选业务简单稳定的公司。③管理层安全边际：选诚实能干的管理层。","detail":"很多人以为安全边际只是'买得便宜'，但巴菲特的安全边际是三维的：即使估值出错（价格安全边际）、即使业务出问题（业务安全边际）、即使管理层犯错（管理层安全边际），投资仍然安全。三重安全垫叠加，才是巴菲特敢重仓的底气。","highlights":[{"text":"核心：安全边际=价格+业务+管理层三重保险","color":"gold"},{"text":"规则：三重安全垫叠加才敢重仓","color":"green"}]}]},{"title":"第3章·浮存金与资本配置","level":"推荐","points":[{"t":"浮存金的魔法","c":"保险浮存金=今天收保费明天才赔付。巴菲特用别人的零成本甚至负成本资金投资，复利效应放大千倍。","detail":"伯克希尔的核心秘密不是选股能力——是浮存金。如果你有1000亿美元零成本资金哪怕只赚5%就是50亿。GEICO的浮存金从1967年的2000万增长到如今的千亿级别。巴菲特比所有人都更深刻理解'资本来源决定投资策略'——他的长期持有风格正是因为浮存金给了他无限耐心。","highlights":[{"text":"核心：浮存金=零成本资金=复利倍增器","color":"gold"},{"text":"洞察：资本来源决定投资策略的基因","color":"purple"}]},{"t":"资本配置的三条路","c":"留存利润有三种用途：①再投资扩张（ROE>15%才值得）②收购（1+1>2）③回购（股价低于内在价值时最佳）。巴菲特优先回购。","detail":"巴菲特说CEO们面对这三个选项时选择④：乱并购做大规模提高自己薪酬。而真正为股东创造价值：再投资ROE要高、收购价格要合理、回购要在低估时。其中回购是最被低估的工具——公司在50美分买入自己的1美元，不动一刀一枪就帮所有股东赚了100%。","highlights":[{"text":"核心：资本配置三板斧：再投资/并购/回购","color":"gold"},{"text":"规则：低估时回购=用50美分买1美元","color":"green"}]}]},{"title":"第4章·管理层评估与公司治理","level":"推荐","points":[{"t":"管理层的三个标准","c":"①能力：历史业绩是否持续优于行业？②诚信：是否坦诚面对错误？③股东导向：是把股东当合伙人还是冤大头？","detail":"巴菲特最看重第三条——'股东导向'。他读年报先看致股东信：CEO谈自己功劳多还是谈业务风险多？把问题归咎外部还是承认失误？薪酬是否与业绩挂钩？巴菲特说：'和一个你不信任的管理层合伙做生意，就像和一个你不爱的人结婚。'","highlights":[{"text":"核心：管理层三标准=能力+诚信+股东导向","color":"gold"},{"text":"规则：先读致股东信判断人品再读财务数据","color":"green"}]},{"t":"回购的艺术与陷阱","c":"低估时回购=股东福音。高估时回购=价值毁灭。用债务回购=自杀。大量增发期权然后回购抵消=欺骗。","detail":"巴菲特在2010年代大规模回购伯克希尔股票，因为股价低于内在价值。但他也多次警告：很多公司管理层在股价高估时回购是为了推高EPS让自己期权行权。判断标准：回购是否让每股内在价值增加？如果公司内在价值100元、股价80元，回购让剩余股东的内在价值增加——这就是好的回购。","highlights":[{"text":"核心：低估回购=创造价值，高估回购=毁灭价值","color":"gold"},{"text":"警示：用评估回购动机判断管理层人品","color":"red"}]}]},{"title":"第5章·市场先生与逆向思维","level":"必修","points":[{"t":"市场先生是你的仆人","c":"市场先生每天来报一个买卖价——有时极度乐观报价极高，有时悲观至极报价极低。你的工作：在他报价极低时买、极高时卖，其余时间不理他。","detail":"2008年金融危机，巴菲特在《纽约时报》发文'我正在买入美国'——所有人恐惧到极点时他出手。2020年3月疫情崩盘，伯克希尔持有1400亿美元现金却没有大举买入——因为估值还不够极端。市场先生的报价本身不是风险，你被他牵着走才是真正的风险。","highlights":[{"text":"核心：利用市场先生而非被他利用","color":"gold"},{"text":"操作：极低买+极高卖+其余不理","color":"green"}]},{"t":"别人贪婪时恐惧，恐惧时贪婪","c":"这句名言的核心不是逆大众——是逆定价错误的极端。不是所有大众看好的都要卖，只有当价格远超价值时才卖。","detail":"巴菲特强调：如果所有人都看好一家公司且估值合理，没问题——持有。只有当所有人都看好且估值疯狂时，才是卖出信号。1969年巴菲特解散合伙基金就是因为'我找不到任何符合标准的低估股票'——整个市场都定价过高。这是逆向投资的真谛：逆向的是定价而非方向。","highlights":[{"text":"核心：逆向的是定价错误而非简单的逆大众","color":"gold"},{"text":"警示：普通人恐惧时真正恐惧的只有定价错误","color":"red"}]}]}],"knowledge_cards":[{"t":"护城河五维度评估法","c":"①品牌护城河：消费者是否愿意为品牌溢价买单？可口可乐盲测中偏好与品牌认知差距越大护城河越宽。②转换成本：客户更换供应商的成本是否高于产品本身？银行/软件/支付系统转换成本极高。③网络效应：每新增一个用户是否增加所有用户的价值？Visa/微信/Facebook是典型案例。④规模优势：规模是否带来单位成本持续下降？沃尔玛/亚马逊的物流规模。⑤特许经营权：是否有政府授予的独家经营权或专利壁垒？评估：≥2条突出=宽护城河，0条=无护城河不投。","type":"rule"},{"t":"巴菲特的股东盈余公式","c":"股东盈余=净利润+折旧摊销-维持性资本支出。区别于会计利润——只计算企业真正可以分配给股东的现金。维持性资本支出是维持当前盈利能力必须的投入（不是扩张投入）。若股东盈余持续增长且资本支出少=优秀企业。DCF估值基于股东盈余而非净利润：内在价值=未来10年股东盈余的折现值+终值。折现率取长期国债利率+适当风险溢价（通常8-10%）。","type":"formula"}],"quotes":["别人贪婪时我恐惧，别人恐惧时我贪婪。","以合理的价格买一家伟大的公司，远胜于以低廉的价格买一家普通的公司。"],"practice":["护城河五维度打分练习","年报致股东信的管理层人品分析"]},{"id":"b24","title":"穷查理宝典","author":"Charlie Munger","category":"投资哲学","stage":5,"diff":4,"hours":14,"summary":"查理·芒格的智慧箴言录。多元思维模型、逆向思维、人类误判心理学、能力圈——投资智慧的集大成者。","chapters":[{"title":"第1章·多元思维模型：跨学科格栅","level":"必修","points":[{"t":"锤子与钉子——单一学科的危险","c":"手里只有锤子的人看什么都是钉子。只用经济学思维分析投资=只看到1/7的真相。核心学科：心理/经济/物理/生物/历史/数学/哲学。","detail":"芒格的核心洞见：现实世界的问题不会按照学科边界整齐排列。一个投资问题可能是60%心理学+30%经济学+10%生物学。只用金融学分析投资就像只用一把锤子修整座房子。芒格的解决方案：掌握各学科最核心的思维模型——物理学的临界质量、生物学的进化、心理学的激励——然后用格栅串联。","highlights":[{"text":"核心：单一学科=单一工具=看窄世界","color":"gold"},{"text":"方法：掌握7大学科核心模型交叉使用","color":"green"}]},{"t":"七大核心思维模型","c":"①复利（数学）②激励（心理学）③供需（经济学）④进化（生物学）⑤反馈系统（物理学）⑥概率（统计学）⑦历史周期。每决策从每学科各问一题。","detail":"数学：这事复利效应是正向还是反向？心理学：所有参与者的激励是什么？经济学：供需何时逆转？生物学：这家公司在生态位中有何独特优势？物理学：临界点在哪？统计学：各种结果的概率分布？历史：历史上类似情况如何收场？七个问题问完，决策质量远超只问'PE多少'。","highlights":[{"text":"核心：每决策从七学科各问一题","color":"gold"},{"text":"规则：七问答不出=认知不足=不投","color":"green"}]}]},{"title":"第2章·逆向思维：反过来想","level":"必修","points":[{"t":"如果我知道会死在哪，我永远不去那","c":"解决问题不是想怎么做会成功——是想怎么做一定会失败然后逐一避免。正向思维想赢，逆向思维先想怎么不会输。","detail":"芒格讲过一个农夫的故事：'如果我知道我会死在哪里，我就永远不去那个地方。'在投资中翻译为：先列出所有会让你亏光的行为——高杠杆、单押一只、追热门、不止损、情绪交易——然后制定规则确保自己永远不做这些事。当你避开了所有必死之路，剩下的路通向成功。","highlights":[{"text":"核心：先想怎么死，然后永远绕开","color":"gold"},{"text":"方法：列出亏光清单→制定规则→绝不违反","color":"green"}]},{"t":"失败归因比成功归因更有价值","c":"研究成功案例容易幸存者偏差。研究失败案例——所有破产的公司在崩溃前有什么共同特征——认知更普适。","detail":"芒格和巴菲特花大量时间研究失败的收购和破产的企业。'我们不研究为什么成功——我们研究为什么失败，然后避开。'所有金融灾难前都有共同信号：过度杠杆、管理层自负、商业模式被颠覆但管理层不承认。逆向研究让你建立了比正向研究更可靠的风险雷达。","highlights":[{"text":"核心：研究失败>研究成功——规避幸存者偏差","color":"gold"},{"text":"方法：归纳所有失败案例的崩溃前共同信号","color":"purple"}]}]},{"title":"第3章·人类误判心理学：25种心理倾向","level":"必修","points":[{"t":"对投资危害最大的5种心理误判","c":"①被剥夺超级反应（亏损厌恶）②社会认同倾向（从众）③过度乐观倾向④确认偏误⑤奖励/惩罚超级反应。每次交易前逐条检查。","detail":"芒格详细拆解了25种人类天生心理倾向，每种都会在无意识中影响决策。'被剥夺超级反应'让你亏1万的痛苦≈赚2万的快乐，所以你不止损。'社会认同'让你在所有人都买的时候跟着买——这正是泡沫的心理学根源。关键认知：这些不是弱点——是大脑出厂设置。你只能管理它，不能消除它。","highlights":[{"text":"核心：25种心理误判是大脑出厂设置","color":"gold"},{"text":"警示：只能管理不能消除——每次交易前逐条对照检查","color":"red"}]},{"t":"激励机制——最重要的力量","c":"芒格说'永远不要低估激励的力量'。任何商业分析的第一步：弄清楚所有参与者的利益结构。谁在什么情况下赚什么钱？","detail":"芒格最经典的格言：'如果你要说服别人，诉诸利益而非理性。'在投资中——管理层的期权激励会让他们在股价高估时回购（推高EPS→行权），基金经理的年度排名激励会让他们追涨杀跌，分析师的佣金激励会让他们唱多不唱空。理解激励机制你就理解了大部分看似非理性的行为。","highlights":[{"text":"核心：激励机制解释一切看似非理性的行为","color":"gold"},{"text":"方法：分析所有参与方→找出利益结构→预测行为","color":"green"}]}]},{"title":"第4章·能力圈与投资检查清单","level":"推荐","points":[{"t":"能力圈的边界是谦虚的边界","c":"芒格和巴菲特一生只投了他们能理解的少数行业。'我们有三个篮子：进、出、太难——大多数公司进'太难'篮。'","detail":"芒格说：'如果你有很强的能力圈，你比那些智商170但能力圈为零的人做得好得多。'关键是诚实判断：这事我到底懂不懂？不要因为别人赚了钱就觉得自己也应该懂。他和巴菲特错过了亚马逊和Google，但芒格说：'我们不后悔——后悔的是在能力圈外做决策。'","highlights":[{"text":"核心：能力圈=诚实地知道边界在哪","color":"gold"},{"text":"规则：大多数公司应该进'太难'篮","color":"green"}]},{"t":"投资检查清单：芒格的飞行员思维","c":"芒格模仿飞行员的起飞前检查清单，任何投资都要逐条对照。不是限制创造性——是确保不遗漏致命问题。","detail":"飞行员每次起飞前都要对照检查清单，即使是飞了30年的老手。因为人是会疲劳会遗忘的。芒格的投资检查清单包括：护城河？管理层人品？估值有安全边际吗？反身性风险？心理误判？竞争格局变化？每项都打勾才扣扳机。'聪明人用检查清单不是因为笨——是因为知道自己的大脑会偷懒。'","highlights":[{"text":"核心：检查清单=对抗大脑偷懒的外挂","color":"gold"},{"text":"方法：逐条打勾→全部通过→才扣扳机","color":"green"}]}]},{"title":"第5章·普世智慧：芒格的生活哲学","level":"推荐","points":[{"t":"反过来想，要得到X先研究如何得到非X","c":"想幸福？先研究如何让生活悲惨然后避免。想财富？先研究如何破产然后不做。芒格式的终极智慧。","detail":"芒格在毕业典礼上做过一个经典演讲：'如何确保过上痛苦的人生'——吸毒、嫉妒、怨恨、不可靠、不学习。然后说：'现在我告诉了你们如何确保痛苦——你们只要反过来做就能幸福。'这就是芒格式的幽默+深刻：用一个出乎意料的角度让真理变得无法忘记。","highlights":[{"text":"核心：想得到X先研究如何得到非X然后反向操作","color":"gold"},{"text":"方法：用出乎意料的角度让深刻真理无法忘记","color":"purple"}]},{"t":"阅读改变命运","c":"芒格说'我这辈子没见过哪个聪明人不每天阅读'。孩子都叫他'一本长了两条腿的书'。","detail":"芒格每天阅读500页以上，从历史到物理到生物到心理学。他说：'通过阅读，你可以和已故的最聪明的人对话——这是人类独有的超能力。'阅读产生复利效应：读得越多，理解得越快，新信息和旧知识连接越多，思维格栅越密。不阅读的人=放弃了人类最重要的进化优势。","highlights":[{"text":"核心：每天阅读=和已故最聪明的人对话","color":"gold"},{"text":"方法：跨学科阅读→知识连接→思维格栅加密","color":"purple"}]}]}],"knowledge_cards":[{"t":"芒格人类误判心理学25条（投资前五条自查清单）","c":"每次重大投资决策前必须逐条检查：①被剥夺超级反应——是否因为不想认亏而在拖延止损？②社会认同倾向——是否因为大家都在买所以想跟？③过度乐观倾向——是否高估了未来的增长率？④确认偏误——是否只看了支持买入的信息？⑤奖励/惩罚超级反应——管理层激励是否在驱动他们做对股东不利的事？五条全通过=心理误判风险可控。五条中任何一条亮红灯=暂停交易冷静24小时再决定。这五条是25条中对投资危害最大的子集。","type":"rule"},{"t":"多元思维模型七学科格栅","c":"①数学：复利、概率、决策树——评估复合增长和各种结果的分布。②心理学：激励、误判、社会认同——理解市场参与者和自己的行为。③经济学：供需、比较优势、规模效应——分析企业的竞争地位。④物理学：临界质量、反馈系统——判断趋势何时加速或逆转。⑤生物学：进化、生态位、自然选择——理解商业竞争的本质。⑥历史：周期、繁荣崩溃——从过去的模式中寻找当前相似性。⑦哲学：第一性原理、逆向思维——追本溯源不盲从。","type":"concept"}],"quotes":["反过来想，总是反过来想。","我这一生见过的最聪明的人，没有一个不是每天都在阅读的。"],"practice":["误判心理学五条自查训练","七学科格栅决策练习"]},{"id":"b25","title":"投资最重要的事","author":"Howard Marks","category":"投资哲学","stage":5,"diff":3,"hours":12,"summary":"橡树资本创始人Howard Marks的备忘录精华。第二层思维、市场钟摆、风险三层理解、周期定位——为卓越投资绩效而写的哲学框架。","chapters":[{"title":"第1章·第二层思维：比别人多想一步","level":"必修","points":[{"t":"第一层 vs 第二层思维","c":"第一层：'好公司，买！'第二层：'好公司但人人知道→估值已反映→应该卖！'专业与业余的分界线不在知识量而在思考深度。","detail":"第一层思维人人都想得到——好行业好公司前景好=买。但第二层思维问：所有人都这么想了，这个'好'已经定价了没有？如果现在价格里已包含所有好消息，买了也赚不到超额收益。三个自检问题：①大多数人怎么看？②我的观点有什么不同？③为什么我比大多数人正确？答不出③=不行动。","highlights":[{"text":"核心：第二层思维=多想一步定价是否已反映","color":"gold"},{"text":"规则：答不出'为什么我比别人正确'=不行动","color":"green"}]},{"t":"第二层思维的实战应用","c":"好公司+高估值=糟糕投资。差公司+极低估值=可能好投资。关键不是公司好坏——是价格是否反映了所有已知信息。","detail":"Marks指出最常犯的错误：把好公司和好投资混为一谈。腾讯是好公司，但在700元买入的人至今亏损；很多钢铁股是差公司，但在行业底部买入的人赚了几倍。投资回报取决于你支付的价格与价值之间的差距——与公司'好坏'无必然关系。第二层思维就是要穿透'好公司'的标签看到价格。","highlights":[{"text":"核心：好公司≠好投资，关键看价格","color":"gold"},{"text":"警示：最危险=好公司+高估值","color":"red"}]}]},{"title":"第2章·理解市场周期与钟摆","level":"必修","points":[{"t":"钟摆永远在两个极端之间摆动","c":"市场永远在过度乐观和过度悲观之间摆动，极少在中点停留。钟摆靠近极端时速度最慢、靠近中点时速度最快。","detail":"Marks的投资生涯中观察到：人的情绪钟摆从中点到极端的速度比物理钟摆更快——因为贪婪和恐惧会自我强化。识别钟摆位置的信号：①媒体头条（乐观/恐慌）②新基金发行量（狂热/冰点）③融资融券余额④估值百分位⑤'这次不一样'的论调出现频率。≥3个极端信号=钟摆正在极端区域。","highlights":[{"text":"核心：钟摆永远在贪婪与恐惧间摆动","color":"gold"},{"text":"规则：≥3个极端信号=钟摆靠近极端=准备逆向","color":"green"}]},{"t":"周期定位：知道你在哪比预测去哪更重要","c":"不预测拐点何时到来——只判断当前在周期的哪个位置。周期底部附近买入>拐点精准买入。","detail":"Marks坦白说他无法预测市场拐点——也没有人能。但他的方法是周期定位：判断当前是'过热'还是'过冷'。过热时降低风险暴露但不清仓（因为不知道泡沫还能吹多大）；过冷时逐步加仓但不一把梭（因为不知道恐慌还要跌多久）。'我们不预测我们定位。'这是Marks最核心的实战智慧。","highlights":[{"text":"核心：知道在哪比预测去哪重要100倍","color":"gold"},{"text":"方法：不预测拐点→判断冷热→渐进调仓","color":"blue"}]}]},{"title":"第3章·风险控制的三层理解","level":"必修","points":[{"t":"三层递进：波动→永久损失→机会","c":"第一层：风险=波动（教科书定义）。第二层：风险=永久性本金亏损（Marks定义）。第三层：风险被充分定价时=最大机会。","detail":"Marks批判了金融学的风险定义：波动不是风险——价格跌了能涨回来的不是真正的风险。真正的风险只有一个：永久性本金损失。更深刻的是第三层认知：当所有人都恐惧、风险溢价极高时（如2008年底），市场价格已经把最坏情况都反映进去了——这时候反而是风险最小、机会最大的时候。","highlights":[{"text":"核心：风险=永久性损失而非波动","color":"gold"},{"text":"洞察：所有人恐惧时风险最大→其实是机会最大","color":"purple"}]},{"t":"风险的反直觉特征","c":"当感觉风险最低时（市场平稳上涨）反而是风险积累最快时。当感觉风险最高时（崩盘）反而是风险释放最充分时。","detail":"2007年市场一片祥和，没有人觉得有风险——Marks这时候开始减持。2008年雷曼倒闭后所有人都觉得世界要完——Marks开始大举买入。风险像冰山：露出水面的部分越小（感知风险低）=水面下的部分越大（实际风险高）。风险不能被消除——只能被转移或转化。","highlights":[{"text":"核心：感知风险与实际风险永远反向运动","color":"gold"},{"text":"警示：最安全的时候最危险，最危险的时候最安全","color":"red"}]}]},{"title":"第4章·逆向投资与耐心等待","level":"推荐","points":[{"t":"在别人不敢买的时候买","c":"超额收益的来源只有两个：①你看到了别人没看到的②你在别人不敢行动的时候行动了。","detail":"Marks强调：'如果你和别人做一样的事，你就只能得到和别人一样的结果。'超额收益必然来自与众不同的行为——在恐慌时买入、在狂热时卖出。但难点不在于知道这一点——在于真的去做。因为逆向投资时，你的所有本能都在尖叫'别买'——而你要逆本能而行。","highlights":[{"text":"核心：超额收益=看到别人没看到+做到别人不敢做","color":"gold"},{"text":"警示：逆向投资的痛苦来自对抗本能","color":"red"}]},{"t":"耐心是最被低估的投资技能","c":"Marks说'没有好机会就坐着等——什么都不做比被迫做点什么强100倍'。","detail":"大多数投资错误不是因为做了错误的投资——是因为在应该等待的时候做了投资。2005-2007年，橡树资本持有大量现金，被别人嘲笑'不作为'。但正是这些现金让他们在2008年危机中有弹药大举买入。巴菲特说投资就像棒球——你可以永远不挥棒，没有人会判你三振出局。","highlights":[{"text":"核心：耐心等待=最重要的进攻性武器","color":"gold"},{"text":"规则：没有好球不挥棒，没人会三振你","color":"green"}]}]},{"title":"第5章·寻找便宜货与价值创造","level":"推荐","points":[{"t":"便宜货的共同特征","c":"①不受欢迎/被忽视②有基本面问题但非致命③被'指数效应'或'卖出压力'压低④无人关注、分析师不覆盖。","detail":"Marks识别便宜货的方法：市场过度反应的领域。比如：被迫卖出（基金清盘/爆仓）、监管强制减持、ESG黑名单导致的机构禁买。这些情况下价格被非基本面因素压低——便宜不是公司不好，是暂时没人买。一旦压力源消失，价格会回归。关键是判断问题是暂时性的还是永久性的。","highlights":[{"text":"核心：便宜货=非基本面因素造成的暂时低价","color":"gold"},{"text":"方法：判断问题是暂时性还是永久性","color":"green"}]},{"t":"价值投资的防守属性","c":"防御型投资不是不承担风险——是在风险-收益不对称对你有利时才承担风险。Marks风格=牛市跟上、熊市远超。","detail":"Marks的投资哲学精华：'我们在牛市中可能略逊于大盘——但熊市中大幅跑赢，长周期复利下来远超。'这是一道简单数学题：亏50%需要赚100%回本。所以防止大亏比追求大赚重要得多。Marks的目标不是成为年度冠军——是30年内不要有任何一年大亏。复利的核心是不要中断。","highlights":[{"text":"核心：防御=牛市跟上+熊市远超=长跑冠军","color":"gold"},{"text":"公式：亏50%需赚100%回本→防止大亏>追求大赚","color":"blue"}]}]}],"knowledge_cards":[{"t":"第二层思维三问检验法","c":"每次投资决策前必须书面回答：①当前市场主流观点是什么？（如实记录大多数人怎么看）②我的观点与主流有什么不同？（必须明确差异，相同则无超额收益）③我有什么依据证明我的观点比主流更正确？（必须列举事实/数据/逻辑而非直觉）。三问全部清晰作答方可行动。第三问尤其关键——如果答不出'为什么我比市场更正确'，说明你没有信息优势或分析优势，此时交易=赌博。这是区分业余与专业投资的核心思维工具。","type":"rule"},{"t":"市场温度计——周期定位五信号","c":"极冷信号（买入）：①融资余额处于三年最低②新基金发行失败频现③成交量为峰值20%以下④PE处于10年10%分位⑤'股市完了'论调泛滥。极热信号（卖出）：①融资余额创历史新高②新基金秒光百亿规模③成交量持续天量④PE处于10年90%分位⑤'这次不一样'论调盛行。≥3条极冷=分步加仓至满仓；≥3条极热=分步减仓至30%仓位。不追求精准抄底逃顶，只判断冷热区间。","type":"formula"}],"quotes":["你不能预测未来，但你可以为未来做准备。","在投资中，最重要的不是买什么，而是花多少钱买。"],"practice":["第二层思维三问每日训练","市场温度计五信号每周评估"]},{"id":"b26","title":"金融炼金术","author":"George Soros","category":"投资哲学","stage":5,"diff":5,"hours":16,"summary":"索罗斯的哲学巨著——提出反身性理论，证明金融市场中参与者的偏见会影响基本面本身，形成自我强化的繁荣-萧条循环。量子基金实战日记同步验证。","chapters":[{"title":"第1章·反身性理论：价格与基本面的双向反馈","level":"必修","points":[{"t":"反身性的核心定义","c":"传统经济学：价格被动反映基本面。反身性：价格主动改变基本面→改变后的基本面又影响价格→形成正反馈或负反馈循环。","detail":"索罗斯用反身性否定了有效市场假说。举例：一家公司股价上涨→可以用更高估值融资并购→并购后利润增长→验证了股价上涨→吸引更多人买入→再涨。基本面本身被价格改变了。这不是非理性的——是理性的参与者在一个非完美的系统中做出理性决策，却导致了非线性的结果。","highlights":[{"text":"核心：价格↔基本面双向因果=反身性","color":"gold"},{"text":"洞察：反身性否定了'价格永远正确'的有效市场论","color":"purple"}]},{"t":"认知函数与操纵函数","c":"认知函数：参与者根据对现状的理解做决策。操纵函数：参与者的决策改变现状。两者相互交织永远无法分离。","detail":"这是反身性理论最严谨的数学表达。认知函数y=f(x)：参与者对世界的认知y取决于世界的状态x。操纵函数x=Φ(y)：世界的状态x被参与者的行动y改变。两个函数同时运行彼此交错——你永远无法获得客观的'基本面'，因为你的观察这个行为本身就在改变基本面。","highlights":[{"text":"核心：认知↔操纵交缠=无法获取客观基本面","color":"gold"},{"text":"推论：所有市场定价都包含了参与者的偏见","color":"purple"}]}]},{"title":"第2章·繁荣-萧条序列：泡沫八阶段模型","level":"必修","points":[{"t":"泡沫八阶段全景","c":"①未被认知的趋势②开始加速③成功验证④偏差扩大⑤现实无法支撑⑥拐点时刻⑦自我强化的下跌⑧全面崩溃回归。","detail":"每个泡沫都遵循相同的剧本：第一幕（①②③）——趋势悄然启动，少数人发现，赚钱效应扩散，越来越多人加入。第二幕（④⑤）——价格远远脱离基本面，'这次不一样'成为主流叙事，聪明人开始质疑但被嘲笑。第三幕（⑥⑦⑧）——某个催化剂刺破泡沫，反身性反向运作，下跌自我强化，最终崩溃到低于合理价值。索罗斯做空英镑时就是识别到了阶段⑤→⑥的拐点。","highlights":[{"text":"核心：每个泡沫都走八阶段剧本","color":"gold"},{"text":"策略：阶段②③做多最肥美，⑤⑥该跑路","color":"green"}]},{"t":"拐点时刻——最重要的识别","c":"泡沫不是因为坏消息而崩溃——是因为好消息不足以支撑更高的价格。当超级利好只带来微涨时=拐点已至。","detail":"索罗斯的实战智慧：不是去预测拐点什么时候来——而是识别拐点是否已经来了。确认信号：①超级好消息→价格只微涨或不涨②媒体和公众的狂热达到极致③质疑者彻底闭嘴④'永恒牛市'论调成主流。当这些信号出现，索罗斯会开始建立反向头寸——不是一次性满仓做空，而是先小仓试探等确认。","highlights":[{"text":"核心：特大好消息不涨=拐点将至","color":"gold"},{"text":"操作：确认拐点先小仓试探等验证后加仓","color":"green"}]}]},{"title":"第3章·信贷与监管周期：索罗斯的宏观框架","level":"必修","points":[{"t":"信贷周期是反身性的主战场","c":"银行放贷标准=最核心的反身性变量。经济好→银行放松放贷→经济更好→再放松→过热→坏账→收紧→衰退→再放松。","detail":"索罗斯认为信贷周期是反身性最强的地方——因为银行的行为直接改变了借款人的偿付能力。银行放贷时企业有钱投资→经济好→银行贷款质量好→放更多→企业更多投资→更好。但一旦开始收紧，企业没钱→经济下滑→贷款变坏账→更要收紧→加速下滑。信贷周期的拐点比经济周期更早也更猛烈。","highlights":[{"text":"核心：信贷周期=反身性最强的战场","color":"gold"},{"text":"方法：盯住银行放贷标准=预判经济拐点","color":"green"}]},{"t":"监管摆动与反身性","c":"金融危机→加强监管→金融压抑→放松监管→金融创新→过度创新→新危机→再加强。索罗斯：监管和市场永远在猫鼠游戏中相互塑造。","detail":"1980年代储贷危机后加强监管→1990年代监管放松→2000年代金融创新大爆发（CDO/CDS）→2008年危机后多德-弗兰克法案→2018年放松→未来某次危机。每一次的监管是针对上一次危机量身定做的，而下一场危机一定来自新监管框架的盲区。理解监管周期=理解下一场危机将在何处爆发。","highlights":[{"text":"核心：监管和市场永远在相互塑造","color":"gold"},{"text":"洞察：下次危机一定来自新监管框架的盲区","color":"purple"}]}]},{"title":"第4章·量子基金实验日记：1985-1986实盘验证","level":"推荐","points":[{"t":"实时实验——把理论放到市场中检验","c":"索罗斯在1985年8月-1986年11月每天记录自己的交易决策和宏观判断，用反身性框架预测并验证了美元/日元、石油、美国国债的重大拐点。","detail":"1985年9月广场协议前，索罗斯做出了最大胆的押注：做空美元。他的分析不是技术面也不是传统基本面——是反身性。美元过度强势→美国贸易逆差恶化→政治压力→汇率干预→美元下跌自我强化。他在日记中记录：'这个头寸基于反身性——美元正在进入自我强化的下跌循环。'量子基金那一年回报率超过120%。","highlights":[{"text":"核心：1985年做空美元=反身性实战经典","color":"gold"},{"text":"验证：广场协议后美元暴跌=反身性框架成功预测","color":"green"}]},{"t":"日记中的教训：错的代价","c":"索罗斯在日记中也记录了多次判断错误。关键不是不犯错——是识别错误后快速修正。'我之所以富有，是因为我知道自己什么时候错了。'","detail":"在实验日记中，索罗斯多次改变对石油价格的看法——从看多到看空到再看多。每次变化的理由都清楚记录。这不是立场摇摆——是反身性框架的核心优势：当基本面被价格改变时，你的判断也必须改变。传统投资者固守'基本面'不放，而索罗斯说：'如果情况变了我就变，这有什么可羞耻的？'","highlights":[{"text":"核心：反身性要求随时修正判断","color":"gold"},{"text":"警示：固执=反身性框架的头号大忌","color":"red"}]}]},{"title":"第5章·反身性的现代案例与交易应用","level":"推荐","points":[{"t":"比特币：反身性的完美教材","c":"比特币价格上涨→媒体报道→更多人买入→再涨→机构入场→再涨→国家入场？每一轮上涨都改变'比特币是什么'的基本面叙事。","detail":"索罗斯2017年说：'比特币是典型的泡沫。'但他没有说的是：反身性框架下，泡沫的持续时间可以远超你的想象。比特币的'基本面'是什么？是网络安全性、用户数、使用场景——而这些每一个都随着价格上涨而改善。这是最纯粹的反身性：价格本身就是基本面的最大组成部分。","highlights":[{"text":"案例：比特币=价格即基本面的终极反身性","color":"gold"},{"text":"教训：反身性泡沫的持续时间可以远超想象","color":"purple"}]},{"t":"反身性框架的实战三步法","c":"①识别：当前是否存在反身性过程（价格与基本面互相强化）？②定位：处于八阶段中哪一阶段？③行动：2-3阶段做多5-6阶段做空。","detail":"不是所有市场都存在反身性——大多数时候价格确实围绕价值波动（近乎均衡）。但在某些时刻（信贷扩张/技术革命/制度变革），反身性开始活跃。索罗斯的智慧是：大多数时候不交易，只在反身性活跃时下重注。三步法中第一步最关键——错误地将非反身性市场当作反身性来交易=灾难。","highlights":[{"text":"核心：大多数时候不交易，只在反身性活跃时下重注","color":"gold"},{"text":"步骤：识别反身性→定位阶段→下重注","color":"green"}]}]}],"knowledge_cards":[{"t":"反身性泡沫八阶段识别表","c":"阶段①未被认知的趋势：少数先行者发现趋势，大多数人无视。②加速期：趋势被更多人认可，价格开始加速。③成功验证：价格上升验证了看多逻辑，怀疑者开始转向。④偏差扩大：价格远超任何合理估值，'这次不一样'成为主流叙事。⑤现实无法支撑：基本面开始跟不上价格步伐，先行者悄悄撤离。⑥拐点：重大利好无法推高价格，市场情绪微妙转变。⑦自我强化下跌：价格下跌引发恐慌，恐慌引发更多卖出，反身性反向运作。⑧全面崩溃：价格跌破合理价值，最终回到或低于均衡。实战：②③阶段做多，⑤⑥阶段做空/离场。","type":"concept"},{"t":"索罗斯的试错-修正仓位管理","c":"索罗斯不追求一开始就重仓正确。初始头寸为计划总仓位的20-30%。若市场方向验证预判（价格向有利方向运动+基本面变化验证逻辑），则每验证一次加仓20-30%。若市场方向与预判相反，立即平仓重新评估——'先退出再看，看不清就等'。最终可能仓位远超100%（通过杠杆），但全部基于逐次验证而非一次性押注。这套方法的哲学：承认自己可能错，用市场当裁判，对了才加大赌注。与金字塔加仓的区别：索罗斯依据的是反身性逻辑验证而非价格本身。","type":"rule"}],"quotes":["我之所以富有，是因为我知道自己什么时候错了。","市场总是错的，因为参与者对未来的判断本身就塑造了未来。"],"practice":["反身性八阶段案例复盘","试错-修正仓位管理模拟"]},{"id":"b27","title":"原则","author":"Ray Dalio","category":"投资哲学","stage":5,"diff":3,"hours":14,"summary":"桥水基金创始人Ray Dalio的人生与工作原则。全天候策略、经济机器模型、激进透明、可信度加权决策、痛苦+反思=进步——不仅是一套投资体系，更是一套人生操作系统。","chapters":[{"title":"第1章·拥抱现实并应对现实","level":"必修","points":[{"t":"现实是中性的——痛苦来自抗拒而非现实本身","c":"Dalio的起点原则：现实像重力——你抱怨它不会让重力消失。接受现实、理解规律、按规律行事。","detail":"Dalio说：'做一个超级现实主义者'。这听起来冷酷但实际是终极务实。市场不会关心你的仓位、你的希望、你的亏损——它只运行自己的规律。你越快接受'市场永远是老大哥'这个现实，就越快从受害者心态转变为适应者心态。适应者存活、抱怨者淘汰——这是进化的铁律。","highlights":[{"text":"核心：现实是重力——抗拒无效理解有用","color":"gold"},{"text":"心态：从受害者变为适应者=进化的第一步","color":"purple"}]},{"t":"进化是宇宙最强大的力量","c":"Dalio的进化观：一切事物要么适应进化要么消亡。个人、公司、策略——不持续进化就等于在等死。","detail":"Dalio把进化论应用于一切：桥水的策略永远在迭代——不是每年改一次而是每天都在微调。全天候策略从1996年的版本到今天已经迭代了几百次。他说：'如果你回顾一年前的自己，不觉得当时的自己是傻瓜，说明你没有进步。'这个标准残酷但有效——迫使你不断自我超越。","highlights":[{"text":"核心：不持续进化=慢性自杀","color":"gold"},{"text":"标准：一年前的自己不觉得傻=没进步","color":"purple"}]}]},{"title":"第2章·激进透明与可信度加权决策","level":"必修","points":[{"t":"激进透明——桥水最独特的原则","c":"所有会议录音、所有讨论公开、任何人都可以挑战任何人。没有'顾及面子'——真相高于和谐。","detail":"桥水的文化被称为'全世界最奇怪的公司文化'。Dalio的逻辑：投资决策的质量决定回报，而决策质量取决于信息质量。如果人们不敢说真话（怕得罪老板、怕丢面子），信息质量就低=决策就烂=亏钱。所以激进透明不是道德选择——是投资回报率的计算：高质量信息输入→高质量决策→高回报。","highlights":[{"text":"核心：激进透明=高质量信息输入=高投资回报","color":"gold"},{"text":"公式：怕得罪人=信息失真=决策烂=亏钱","color":"red"}]},{"t":"可信度加权——不是所有意见都平等","c":"每人在其领域有'可信度评分'。决策时参考所有意见但按可信度加权：专家意见权重10、新手意见权重1。","detail":"Dalio发明了一套'棒球卡'系统——给每位员工打分，记录他们在不同领域的判断准确率。讨论宏观经济时，做对过3次以上预测的宏观分析师意见权重10；第一次发言的实习生产品经理意见权重1。'民主不是一人一票——是可信度加权投票。'这避免了两个极端：独裁（老板说了算）和民粹（谁声音大谁说了算）。","highlights":[{"text":"核心：可信度加权=专家权重>新手权重","color":"gold"},{"text":"方法：棒球卡系统=实时记录每个人的决策准确率","color":"green"}]}]},{"title":"第3章·错误日志与痛苦+反思=进步","level":"必修","points":[{"t":"痛苦+反思=进步——Dalio最重要的公式","c":"每次犯错→感受痛苦→反思原因→写出改进规则→严格执行→再次犯错→再次痛苦→再次反思→循环螺旋上升。","detail":"Dalio在1982年错判美国经济崩溃公开认错——这是他人生最大的痛苦也是最大的转折。从那天起他建立了错误日志制度：每一次错误都被分类、归因、归档。痛苦不是坏事——痛苦+反思=一次升级。痛苦+不反思=白白受苦。大多数人跳过反思步骤——所以大多数人重复同样的错误。","highlights":[{"text":"核心：痛苦+反思=进步，痛苦+不反思=白受苦","color":"gold"},{"text":"方法：每次错误→记录→归因→写规则→执行","color":"green"}]},{"t":"错误日志——桥水的核心操作系统","c":"所有错误都被记录到共享日志中，所有人都能看到。不是追责——是把错误变成组织的学习资产。","detail":"普通公司把错误藏起来（丢人），桥水把错误晒出来（学习）。错误日志让一个团队里每个人都能从别人的错误中学习——1个人犯的错让100个人都学到。Dalio说：'问题就像解谜——找到问题的根源就是找到了升级系统的密码。'桥水的错误日志累计超过10万条，每一条都是免费的学习素材。","highlights":[{"text":"核心：错误日志=组织的集体学习资产","color":"gold"},{"text":"方法：1人犯错100人学习=学习效率100倍","color":"blue"}]}]},{"title":"第4章·经济机器与全天候策略","level":"必修","points":[{"t":"经济机器——Dalio的宏观理解框架","c":"经济=无数交易的集合。三股驱动力：①生产率增长（长期向上）②短期债务周期（5-8年）③长期债务周期（50-75年）。","detail":"Dalio的30分钟动画'经济机器是怎样运行的'被数亿人观看——因为它用极简的方式拆解了复杂系统。核心逻辑：生产率决定长期趋势线，两个债务周期围绕趋势线上下波动。理解了你处在哪个周期的哪个位置，你就理解了资产价格的未来方向。2008年桥水提前预判危机正是因为识别到了长期债务周期的顶峰。","highlights":[{"text":"核心：经济=生产率+短期债务周期+长期债务周期","color":"gold"},{"text":"方法：识别三个周期各自的位置=判断资产方向","color":"green"}]},{"t":"全天候策略——在任何环境下都不崩溃","c":"股票30%+长期国债40%+中期国债15%+黄金7.5%+大宗商品7.5%。每季度再平衡。四大经济环境（增长/衰退/通胀/通缩）各有一种资产表现好。","detail":"Dalio设计全天候不是为了追求最高回报——是为了追求'永不崩溃'。传统60/40组合在通胀环境下股债双杀。全天候通过风险平价（而非资本平价）配置——不是每类资产放同样多的钱，而是每类资产承担同样的风险。这意味着债券占比大（波动小用更多钱对冲），黄金和商品占比小但作用关键（通胀对冲）。","highlights":[{"text":"核心：全天候=风险平价而非资本平价","color":"gold"},{"text":"理念：不追求最高回报——追求永不崩溃","color":"purple"}]}]},{"title":"第5章·人与文化：打造极致团队","level":"推荐","points":[{"t":"人是第一位的——比策略更重要","c":"Dalio说：'给我一个平庸的策略配上一流的执行团队，远超一流的策略配上平庸的团队。'","detail":"桥水的招聘过程极其严格——录取率不到1%。Dalio要找的不是最聪明的人，而是'最擅长从错误中学习的人'。因为聪明人在投资界多如牛毛，但真正能从错误中快速成长并保持开放心态的人凤毛麟角。桥水用性格测试+多次面试+试用期来筛选。核心寻找特质：'知道你不知道什么并坦然承认。'","highlights":[{"text":"核心：一流的执行团队>一流的策略","color":"gold"},{"text":"招聘标准：最擅长从错误中学习>最聪明","color":"green"}]},{"t":"有意义的工作和有意义的人际关系","c":"Dalio认为这两者是不可分割的。只有激进的坦诚才能建立真正信任的团队。而真正信任的团队才能做出最好的投资决策。","detail":"桥水成功的秘密武器不是经济模型——是文化。当所有人都可以毫无顾忌地指出别人的错误时（包括Dalio本人被实习生怼），思考的质量指数级提升。但这个文化极其难复制——因为它要求所有人都极度理性、不ego、把真相放在自我之前。Dalio承认：很多人才离开桥水正是因为无法适应这种'残酷的坦诚'。","highlights":[{"text":"核心：文化=最深的护城河也最难复制","color":"gold"},{"text":"警示：激进透明不适合所有人——筛选比培养更重要","color":"red"}]}]}],"knowledge_cards":[{"t":"全天候策略风险平价配置","c":"全天候配置=股票30%+长期国债40%+中期国债15%+黄金7.5%+大宗商品7.5%。核心理念是风险平价（Risk Parity）：不是每类资产投相同金额，而是每类资产承担相同风险。债券波动低→配置更多（55%），股和商品波动高→配置更少（37.5%和15%）。每季度再平衡一次。覆盖四大宏观环境：增长利好股票、衰退利好债券、通胀利好黄金/大宗、通缩利好债券。年化收益6-8%+波动<10%+极端回撤<20%。目标是任何单一宏观环境都不会击穿组合。","type":"formula"},{"t":"Dalio错误日志五步法","c":"①发生了什么？（客观描述错误——不评价不辩解）②根本原因是什么？（至少问5个'为什么'追溯到根源）③如果是系统性问题——修改系统规则；如果是个人失误——制定个人检查清单。④将改进方案写下来并通知所有相关人员。⑤设置触发检查点（如每周回顾）确保新规则得到执行。关键原则：错误日志不是用来追责的——是用来升级操作系统的。同样的错误出现两次=系统没有升级到位。","type":"rule"}],"quotes":["痛苦+反思=进步。","拥抱现实并应对现实，做一个超级现实主义者。"],"practice":["创建个人错误日志体系","全天候组合季度再平衡练习"]},{"id":"b28","title":"专业投机原理","author":"Victor Sperandeo","category":"交易系统","stage":3,"diff":3,"hours":14,"summary":"Sperandeo连续12年盈利无一亏损月。123法则+2B法则是最经典的趋势反转判断工具。","chapters":[{"title":"第1章·123法则","level":"必修","points":[{"t":"三步判断反转","c":"①趋势线被突破②不再创新高低③突破前一个回调低/高点。三步全满足=反转概率>80%。","detail":"不预测反——等反转自己走出来再确认。第一步警告二步怀疑三步确认。很多人错在第一步就急做反向。","highlights":[{"text":"核心：等反转走出来再确认不预判","color":"gold"},{"text":"方法：三步判断反转——反复练习","color":"blue"}]}]},{"title":"第2章·2B法则","level":"必修","points":[{"t":"假突破反转","c":"价短暂突破前高/低后迅速反转=主力陷阱。诱多出货或诱空吸筹——反向交易。","detail":"123+2B同时出现=最强反转信号可重仓。仅2B=半仓试单。仅趋势线突破=观望。","highlights":[{"text":"核心：2B=主力陷阱→反向交易","color":"gold"},{"text":"方法：假突破反转——反复练习","color":"blue"}]}]},{"title":"第3章·趋势线与盈亏比","level":"推荐","points":[{"t":"趋势线画法","c":"连接两个连续回调低/高点。触及越多越有效。角度不能超45度。","detail":"太陡趋势线不可持续。跌破需收盘确认。趋势线角度判断趋势健康度。","highlights":[{"text":"规则：趋势线角度30-45度=健康","color":"green"}]},{"t":"最小3:1盈亏比","c":"潜在回报至少潜在风险3倍才入场。即使胜率40%盈亏比3:1期望=0.6(正期望)。","detail":"胜率80%但盈亏比0.5期望=0.2。盈亏比比胜率重要得多。","highlights":[{"text":"公式：期望=胜率×盈-(1-胜率)×亏","color":"gold"},{"text":"方法：最小3:1盈亏比——反复练习","color":"blue"}]}]},{"title":"第4章·资金管理法则","level":"必修","points":[{"t":"2%单笔风险上限","c":"任何单笔交易亏损不超过总资金2%。连续亏损20次仍存活——2%是生存底线不可突破。","detail":"2%不是建议是铁律。连续10次亏损仅亏18%——正常回撤。5%单笔=10次亏50%=回本需100%。活下去才有机会。","highlights":[{"text":"铁律：单笔永远不超过2%","color":"gold"},{"text":"警示：5%/笔=10次亏50%=回本需100%","color":"red"}]},{"t":"风险敞口总量控制","c":"所有持仓总风险敞口≤6%。单月回撤≥10%强制暂停——复盘月内每笔交易后再入场。","detail":"6%总敞口=最多3个2%仓位同时运行。月亏10%=休息30天+逐笔复盘+验证系统未失效方可恢复。机制保护你免受情绪化连续交易。","highlights":[{"text":"规则：总敞口≤6%+月亏10%强制暂停","color":"green"}]}]},{"title":"第5章·交易心理学","level":"推荐","points":[{"t":"四种致命情绪","c":"恐惧→不敢入场错过机会。贪婪→满仓杠杆赌反转。希望→亏损死扛不认错。愤怒→报复性交易加倍损失。","detail":"Sperandeo：情绪是交易的头号敌人。识别情绪信号：手抖=仓位太大、不想看盘=方向错了、急于翻本=停手。建立情绪日记每天记录交易时的心理状态。","highlights":[{"text":"核心：识别情绪信号比识别技术信号更重要","color":"gold"},{"text":"方法：建立情绪日记——每天记录交易心理","color":"blue"}]}]}],"knowledge_cards":[{"t":"123法则市场哲学","c":"123法则的核心哲学：不预测反转——等反转自己走出来再确认。第一步警告(趋势线破)、第二步怀疑(不创新高/低)、第三步确认(突破前高低)。三步全满足=趋势已变不需要预测。这个框架的深层智慧在于承认我们无法精确预测拐点——但可以在趋势变化后第一时间识别。","type":"concept"},{"t":"123+2B决策矩阵","c":"123+2B同时出现=最强反转信号可重仓(70%+仓位)。仅123满足=正常仓位(50%仓位)。仅2B=半仓试单(25%仓位)。仅趋势线突破=观望不行动(0%仓位)。信号叠加越多持仓越大——信号减少持仓递减。这是仓位与信号质量挂钩的经典范式。","type":"rule"}],"quotes":["交易的唯一目的是赚钱，不是证明自己正确。","市场就像一条河流——你无法改变它的方向，只能跟随它。"],"practice":["每天复盘画出3只标的的123与2B信号","用半年交易数据验证盈亏比3:1的期望公式"]},{"id":"b29","title":"股票魔法师","author":"Mark Minervini","category":"选股策略","stage":4,"diff":3,"hours":12,"summary":"Minervini连续三年美国投资大赛冠军3万倍收益。SEPA策略+VCP形态+趋势模板。","chapters":[{"title":"第1章·SEPA五要素","level":"必修","points":[{"t":"趋势→基本面→催化剂→买点→风控","c":"五个要素全部满足才考虑交易——任一项缺失=放弃。","detail":"有先后顺序：先看趋势定方向→基本面定质量→催化剂定时机→买点定盈亏比→风控保生存。","highlights":[{"text":"核心：五要素缺一不可","color":"gold"},{"text":"方法：趋势→基本面→催化剂→买点→风控——反复练习","color":"blue"}]}]},{"title":"第2章·VCP波动收缩","level":"必修","points":[{"t":"弹簧压缩形态","c":"至少3次波动收缩+每次比前次小25-50%+最后振幅<10%+底量<均量50%+突破量>均量1.5倍。","detail":"VCP=弹簧压缩蓄能。收缩越紧爆发越强。收缩点突破=最佳买点——止损窄利润空间大。","highlights":[{"text":"核心：VCP=弹簧压缩收缩越紧爆发越强","color":"gold"},{"text":"方法：弹簧压缩形态——反复练习","color":"blue"}]}]},{"title":"第3章·趋势模板","level":"推荐","points":[{"t":"7条筛选标准","c":"股价>150/200日线+150>200+200日上涨≥1月+>52周低30%+在52周高25%内+RS>70。全满足=入选。","detail":"趋势模板=过滤器——不符合的任何股票不看。每天收盘30分钟完成自选股检查。","highlights":[{"text":"规则：趋势模板=硬性过滤器","color":"green"}]}]},{"title":"第4章·卖出纪律","level":"必修","points":[{"t":"止损与止盈规则","c":"止损：跌破买入日最低价或亏损超7-8%无条件离场。止盈：涨20%后卖一半利润锁定成本归零交易。","detail":"Minervini止损铁律：买入日最低价=止损线——跌破=判断错误立即离场。涨20%=卖1/2仓位让剩余仓位零成本持有——心理优势巨大可安心等大行情。","highlights":[{"text":"铁律：跌破买入日最低价=无条件离场","color":"gold"},{"text":"策略：涨20%卖1/2=零成本持仓","color":"green"}]},{"t":"技术卖出信号","c":"放量长上影+跌破10日线+连续3日不创新高+RSI顶背离——任一项触发=减仓2+项=清仓。","detail":"卖出比买入难10倍。买入有无限候选卖出只有手中持仓。预设卖出条件不临场决策。每周五检查持仓：仍满足趋势模板？继续持有——否则减仓或清仓。","highlights":[{"text":"核心：卖出比买入难10倍——预设条件不临场决策","color":"gold"},{"text":"方法：技术卖出信号——反复练习","color":"blue"}]}]},{"title":"第5章·仓位集中与轮动","level":"推荐","points":[{"t":"4-8只核心持仓","c":"总持仓不超过8-12只核心4-8只。每只初始10-25%。最强2-3只=金字塔加仓对象——弱者淘汰换强者。","detail":"集中持有最佳标的≠分散持有平庸标的。每月评估排名——前3名加仓后3名减持。仓位向最强标的集中让利润奔跑。轮动是持续盈利的核心机制。","highlights":[{"text":"核心：集中最佳而非分散平庸","color":"gold"},{"text":"方法：每月排名——强者加仓弱者淘汰","color":"blue"}]}]}],"knowledge_cards":[{"t":"SEPA策略哲学","c":"SEPA=Specific Entry Point Analysis(精确买点分析)。其核心不是选好股票——是在最好的时机以最好的价格买最好的股票。五要素过滤链：趋势过滤→基本面过滤→催化剂过滤→买点过滤→风控过滤。任何一环不满足=不交易。这解决了多数交易者的问题：知道买什么但不知道什么时候买。","type":"concept"},{"t":"VCP量化标准","c":"①至少3次波动收缩(Tight→Tighter→Tightest)②每次收缩幅度比前次小25-50%③最后一次收缩振幅<10%④底部成交量<50日均量50%⑤突破时成交量>50日均量1.5倍⑥收缩周期2-6周。六条全部满足=高胜率VCP突破买点。收缩越紧爆发越强。","type":"rule"}],"quotes":["坚持你的策略比找到好的策略难100倍。","超级表现股总在无人关注时开始上涨，在人尽皆知时见顶。"],"practice":["每周用趋势模板筛选全市场自选股","在历史图表中找出10个标准VCP形态训练识别"]},{"id":"b30","title":"期货市场技术分析","author":"John Murphy","category":"技术分析","stage":2,"diff":3,"hours":18,"summary":"技术分析百科全书级教材。CFA考试指定参考书。覆盖均线、震荡指标、OBV、持仓量、市场间分析。","chapters":[{"title":"第1章·移动平均线系统","level":"必修","points":[{"t":"均线实战核心","c":"单均线=价格在线上多头。双均线=金叉买入。三均线=多头排列最强。均线方向>位置。","detail":"均线向上时价破均线可能是买点(回调买入)。均线向下时价破均线可能是卖点(反弹卖出)。","highlights":[{"text":"核心：均线方向比位置更重要","color":"gold"},{"text":"方法：均线实战核心——反复练习","color":"blue"}]}]},{"title":"第2章·MACD与RSI","level":"必修","points":[{"t":"MACD背离最强","c":"价创新高DIF不创新高=顶背离卖出。价创新低DIF不创新低=底背离买入。周线>日线。","detail":"零轴附近背离信号更强。两次背离>一次。背离+趋势线突破=最强组合。","highlights":[{"text":"核心：MACD背离=最可靠反转信号","color":"gold"},{"text":"方法：MACD背离最强——反复练习","color":"blue"}]}]},{"title":"第3章·成交量与市场间分析","level":"推荐","points":[{"t":"OBV能量潮","c":"OBV与价同步=健康。OBV不跟=背离。OBV的走势比数值更重要。","detail":"OBV的背离是最可靠量价信号之一。量在价先。","highlights":[{"text":"规则：OBV背离=最可靠量价信号","color":"green"}]},{"t":"跨市场联动","c":"美元↑→商品↓。债券收益率↑→股票承压。黄金↑→通胀预期↑。","detail":"单一市场看不够——跨市场联动提供全局视角。","highlights":[{"text":"核心：跨市场联动=全局视角","color":"gold"},{"text":"方法：跨市场联动——反复练习","color":"blue"}]}]},{"title":"第4章·期货的三大独特性","level":"必修","points":[{"t":"连续性合约的陷阱","c":"期货有到期日——主力合约换月产生跳空。连续图=拼接数据≠真实可交易价格。分析主连+关注升贴水结构。","detail":"主力合约换月时价差可达3-5%。用连续图回测=高估收益低估回撤——因为跳空在实际交易中不可捕捉。必须用实际合约而非拼接数据进行策略验证。升水市场=正向(远月>近月)贴水市场=反向。","highlights":[{"text":"警示：连续图回测=高估收益——跳空不可交易","color":"red"},{"text":"规则：分析主连合约+关注升贴水结构","color":"green"}]},{"t":"杠杆与双向交易","c":"10倍杠杆=10%波动=本金翻倍或归零。裸做空=无限风险(理论上亏损无上限)。杠杆×持仓量×波动率=实际风险敞口。","detail":"期货最大危险：杠杆让人忽视实际风险敞口。1手原油=1000桶×$70=$70000面值——10%保证金=$7000但风险按$70000计算。双向交易=无论牛熊都有机会但要控制裸空头寸规模。","highlights":[{"text":"核心：杠杆×持仓量×波动率=真实风险敞口","color":"gold"},{"text":"警示：杠杆与双向交易不可忽视","color":"red"}]}]},{"title":"第5章·期货综合实战框架","level":"推荐","points":[{"t":"四维分析体系","c":"①趋势(均线方向)②动量(MACD/RSI背离)③量仓(成交量+持仓量配合)④市场间(美元/利率/相关商品)。四维共振=高胜率信号。","detail":"单一维度信号=40-50%胜率。二维共振=50-60%。三维=60-70%。四维同时共振=70%+。持仓量增加+价格上涨=多头主动(强)。持仓量增加+价格下跌=空头主动(强)。持仓量减少=趋势减弱。","highlights":[{"text":"核心：四维共振=胜率从40%→70%+","color":"gold"},{"text":"规则：持仓量增减=多空力量验证关键","color":"green"}]}]}],"knowledge_cards":[{"t":"期货连续性的本质","c":"期货与股票最大区别：合约有到期日。主力合约换月产生非交易跳空——连续图是拼接数据而非真实价格序列。升水(Contango)市场=远月>近月(持有成本>便利收益)。贴水(Backwardation)=近月>远月(现货紧张)。升贴水结构反映供需基本面——是股票技术分析完全不具备的额外信息维度。","type":"concept"},{"t":"持仓量分析法则","c":"持仓量(Open Interest)=市场参与度。四种经典组合：①价涨+量增+仓增=多头趋势健康(加仓)②价涨+量缩+仓减=上涨乏力(减仓)③价跌+量增+仓增=空头趋势健康(持有空头)④价跌+量缩+仓减=下跌衰竭(获利了结)。持仓量的变化方向比绝对数值更重要。量仓配合分析是期货独有的优势。","type":"rule"}],"quotes":["技术分析的本质是通过历史价格研究群体心理。","期货市场最大的优势——你可以双向交易，但最大的危险也在于此。"],"practice":["建立四维分析评分表每日更新3个品种","对比连续合约与主力合约的信号差异写笔记"]},{"id":"b31","title":"金融怪杰","author":"Jack Schwager","category":"交易系统","stage":4,"diff":2,"hours":14,"summary":"Schwager采访17位顶级交易员。他们的方法各不相同但纪律和心态惊人一致。","chapters":[{"title":"第1章·大师们的共同点","level":"必修","points":[{"t":"17位大师共同特质","c":"都曾亏光过+极度自律+明确系统+严格执行止损+风控放首位+不预测只跟随。","detail":"方法各不相同(基本面/技术面/宏观)——但执行方式惊人一致。证明：方法不是关键执行力是关键。","highlights":[{"text":"核心：执行力>方法——17位大师证明","color":"gold"},{"text":"方法：17位大师共同特质——反复练习","color":"blue"}]}]},{"title":"第2章·Paul Tudor Jones","level":"推荐","points":[{"t":"1987年黑色星期一","c":"崩盘前判断市场会跌但当天仍在做多。发现错误立即反手做空——当天赚1亿美元。","detail":"判断正确≠立即正确。发现错误立即纠正的能力比预测能力更值钱。","highlights":[{"text":"核心：发现错误立即纠正>预测正确","color":"gold"},{"text":"方法：1987年黑色星期一——反复练习","color":"blue"}]}]},{"title":"第3章·Ed Seykota趋势跟踪哲学","level":"推荐","points":[{"t":"系统化趋势跟踪","c":"Seykota将客户$5000变成$1500万——靠系统化趋势跟踪而非预测。规则编程化执行消除情绪干扰。","detail":"Seykota名言：Everyone gets what they want from the market(每个人从市场得到他真正想要的)。有些人想要刺激——他们得到频繁交易和亏损。有些人想要利润——他们得到纪律和长期盈利。","highlights":[{"text":"核心：系统化执行消除情绪干扰","color":"gold"},{"text":"洞见：你从市场得到你真正想要的","color":"purple"}]},{"t":"趋势跟踪的精髓","c":"截断亏损让利润奔跑——八个字概括所有盈利策略。止损要快盈利要慢——与人性完全相反所以难执行。","detail":"趋势跟踪=60%小亏20%小赚20%大赚。20%大赚覆盖所有小亏产生净利润。核心不是提高胜率——是确保每笔大赚不被过早截断。Seykota用移动止损跟随趋势绝不预设目标价。","highlights":[{"text":"核心：60%小亏+20%小赚+20%大赚=正期望","color":"gold"},{"text":"方法：趋势跟踪的精髓——反复练习","color":"blue"}]}]},{"title":"第4章·顶级交易员的共同风控","level":"必修","points":[{"t":"五道风控防线","c":"①单笔≤2%②日亏≤5%暂停③周亏≤10%停一周④月亏≤15%停一月⑤年亏≤25%重新评估系统。五道防线层层保护。","detail":"17位大师无一例外都有明确风控规则——系统可能不同但底线惊人一致。风控不是让你赚更多——是确保你活到系统发挥正期望的那一天。没有风控的系统像一个没有刹车的高速赛车。","highlights":[{"text":"铁律：五道防线层层保护——缺一不可","color":"gold"},{"text":"警示：没有风控=没有刹车的高速赛车","color":"red"}]}]}],"knowledge_cards":[{"t":"交易系统中的正期望","c":"正期望值是区分赌博和交易的唯一标准。计算公式：E=(胜率×均盈)-(败率×均亏)。胜率30%+均盈3+均亏1=0.3×3-0.7×1=0.2正期望。胜率80%+均盈0.5+均亏1=0.8×0.5-0.2×1=0.2正期望。两种系统都能赚钱但心理体验完全不同——选择与你心理匹配的系统比追求高胜率更重要。","type":"concept"},{"t":"17位大师共同止损原则","c":"①止损≤总资金2%（硬约束不可突破）②止损在入场前设定（不在盘中临时决定）③止损触发后等30分钟冷静再考虑重新入场④连续3次止损=当天停止交易⑤月度亏损≥6%=当月停止交易全面复盘。这五条规则被所有17位大师采纳——不分交易风格和技术流派。","type":"rule"}],"quotes":["市场不在乎你是谁，它永远按照自己的方式运行。","每个人从市场得到他真正想要的——不是他嘴上说的。"],"practice":["列出5条自己交易系统的正期望值证据","对照大师的止损规则检查自己的风控缺口"]},{"id":"b32","title":"新金融怪杰","author":"Jack Schwager","category":"交易系统","stage":4,"diff":2,"hours":14,"summary":"采访外汇、期权、系统化交易等细分领域顶尖高手。比前作更多元化技术化。","chapters":[{"title":"第1章·外汇之王Lipschutz","level":"推荐","points":[{"t":"从12000到数亿","c":"市场永远是对的——但你的交易理由可能也是对的只是时机不对。判断+时机缺一不可。","detail":"区分判断正确和时机正确。判断一只股会涨是对的但入场先跌30%心态崩溃——在真正涨前止损。","highlights":[{"text":"核心：判断正确≠时机正确——两者缺一不可","color":"gold"},{"text":"方法：从12000到数亿——反复练习","color":"blue"}]}]},{"title":"第2章·系统化交易","level":"推荐","points":[{"t":"机械+人为最优","c":"机械系统=无情绪+可回测+可复制处理80%日常。人为=处理20%特殊情况。","detail":"纯粹机械系统：市场结构性变化导致失效。纯粹主观：情绪干扰严重。最优=系统为主人为监督。","highlights":[{"text":"规则：系统处理80%常规人为处理20%异常","color":"green"}]}]},{"title":"第3章·行为金融陷阱","level":"必修","points":[{"t":"四大认知偏差","c":"①确认偏差：只看支持自己观点的信息②近期偏差：过度权重最近事件③锚定效应：纠结买入价④处置效应：过早止盈过晚止损。","detail":"认知偏差是系统化交易最大的隐性敌人。克服方法：①写交易日记暴露偏差②回测客观数据不凭记忆③预设出场条件④定期复盘。Schwager发现最成功的交易员都有系统化克服偏差的机制。","highlights":[{"text":"核心：认知偏差是隐性敌人——用系统克服","color":"gold"},{"text":"方法：写交易日记+预设条件+定期复盘","color":"blue"}]}]},{"title":"第4章·多时间框架与多策略","level":"推荐","points":[{"t":"三时段协同","c":"周线定方向(战略)日线选时机(战术)小时线精准入场(执行)。三时段同向=重仓。方向冲突=观望或轻仓。","detail":"多数散户只看一个时间框架——如同只用一只眼看三维世界。周线多头+日线回调+小时线突破回调高点=完美入场。不同时间段不同角色不可混淆。","highlights":[{"text":"规则：三时段同向=重仓,冲突=观望","color":"green"}]},{"t":"策略组合思维","c":"单策略有失效周期。2-3个低相关策略组合=平滑曲线提高夏普率。趋势跟踪+均值回归=互补黄金组合。","detail":"趋势策略在震荡市亏钱均值回归在趋势市亏钱——两者组合=任一市场环境都有盈利策略。关键是策略间相关性<0.3。相关性>0.5=伪分散。定期评估各策略表现。","highlights":[{"text":"核心：趋势+均值回归=互补黄金组合","color":"gold"},{"text":"方法：策略组合思维——反复练习","color":"blue"}]}]}],"knowledge_cards":[{"t":"系统化交易的优势边界","c":"系统化交易的本质：将决策从情绪中剥离。优势：可回测验证、可复制执行、可量化优化。劣势：市场结构性变化时系统可能失效（过拟合）、黑天鹅事件超越系统设计范围。最优方案：80%机械执行+20%人为监督。系统负责处理常规市场——人为负责识别系统性变化和极端事件。","type":"concept"},{"t":"系统化交易核心原则","c":"①规则可编程执行（不能有模糊判断）②风险预先定义（每笔交易前已知最大亏损）③系统整体正期望值（回测验证）④至少经历一轮完整牛熊周期回测⑤实盘从最小仓位开始验证6个月。满足以上五条的才可投入实盘。任何一条不满足的系统都只是纸上谈兵。","type":"rule"}],"quotes":["交易系统就像汽车——即使最好的车也需要好司机。","在这个行业中，你可以做对一切仍然亏钱——这就是风险的本质。"],"practice":["写出交易计划——80%机械规则+20%人为判断","记录一周内所有因情绪违反规则的交易并标注偏差类型"]},{"id":"b33","title":"黑天鹅","author":"Nassim Taleb","category":"投资哲学","stage":6,"diff":4,"hours":14,"summary":"真正改变世界的是罕见不可预测影响巨大的黑天鹅。正态分布建模=致命。","chapters":[{"title":"第1章·极端斯坦","level":"必修","points":[{"t":"平均vs极端","c":"平均斯坦(身高体重)=正态分布适用。极端斯坦(财富金融)=少数极端值决定一切正态分布失效。","detail":"1987黑色星期一2008危机COVID——每个都是正态认为几亿年一遇。用正态管风险=玩俄罗斯轮盘。","highlights":[{"text":"核心：金融市场=极端斯坦","color":"gold"},{"text":"方法：平均vs极端——反复练习","color":"blue"}]}]},{"title":"第2章·杠铃策略","level":"必修","points":[{"t":"90/10配置","c":"90%极度安全(国债现金)10%极度冒险(期权风投)。中间全避开=有限下行+无限上行。","detail":"90%保证不死10%博正黑天鹅。中等风险既不能保命也不暴富。永远不满仓永远不杠杆。","highlights":[{"text":"规则：杠铃=90/10=保命+暴富","color":"green"}]}]},{"title":"第3章·预测的荒谬性","level":"必修","points":[{"t":"为什么专家预测不如抛硬币","c":"Tetlock研究284位专家20年284000条预测——准确率≈黑猩猩随机扔飞镖。专家在极端事件预测上尤其糟糕。","detail":"越是复杂的系统预测越无意义。金融市场受无数变量交互影响——任何模型都是对现实的极端简化。塔勒布：预测者的真正功能不是预测——是用复杂术语让你相信他们知道一些他们不知道的事。","highlights":[{"text":"警示：284位专家20年预测≈随机飞镖","color":"red"},{"text":"洞见：预测者的功能是说服而非预测","color":"purple"}]},{"t":"火鸡问题","c":"火鸡被喂养1000天——每天确认人类善良。第1001天=感恩节=黑天鹅。历史数据越长越容易产生虚假安全感。","detail":"火鸡从历史数据得出的结论完全正确但致命。同理：连续10年牛市的数据让你确信股票永远涨——直到它不涨。安全感与真实安全性呈反向关系——越觉得安全越危险。","highlights":[{"text":"核心：安全感与真实安全性反相关","color":"gold"},{"text":"警示：火鸡问题不可忽视","color":"red"}]}]},{"title":"第4章·如何在黑天鹅中获益","level":"必修","points":[{"t":"做多波动率策略","c":"组合中配置1-5%虚值期权——平时小亏黑天鹅时100倍+回报。90%时间亏小钱10%时间赚大钱=正期望。","detail":"塔勒布的交易策略核心：持续购买便宜的虚值看跌/看涨期权。大多数到期归零但一次黑天鹅收益覆盖全部成本并巨赚。2008年Universa基金(塔勒布顾问)回报115%——同期标普跌37%。","highlights":[{"text":"策略：虚值期权=有限下行+黑天鹅无限上行","color":"green"},{"text":"实证：2008年+115% vs 标普-37%","color":"gold"}]},{"t":"构建反脆弱投资组合","c":"80%极度安全资产(短期国债黄金现金)+20%高风险高凸性资产(虚值期权风投)。中间地带资产=零配置。","detail":"中间地带=看似安全实则脆弱的资产(企业债高收益债银行理财)——黑天鹅来临时流动性枯竭价格暴跌。杠铃策略的根本逻辑：要么绝对安全要么绝对冒险——避开伪安全的中间地带。","highlights":[{"text":"核心：绝对安全+绝对冒险=避开伪安全中间","color":"gold"},{"text":"方法：构建反脆弱投资组合——反复练习","color":"blue"}]}]}],"knowledge_cards":[{"t":"极端斯坦vs平均斯坦","c":"平均斯坦(Mediocristan)：个体偏离均值有限——身高体重智商。极端斯坦(Extremistan)：少数极端值决定一切——财富金融图书销量。金融市场属于极端斯坦：一次黑天鹅事件的影响超过10年常规波动之和。用平均斯坦的工具(正态分布)管理极端斯坦的风险=用渔网捕鲸——工具与对象根本错配。","type":"concept"},{"t":"杠铃策略配置法","c":"①80-90%配置极度安全资产：短期国债+黄金+现金（不追求收益只追求生存）②10-20%配置高风险高凸性资产：虚值期权+风投+加密货币（有限下行+无限上行）③中间地带资产=0配置：企业债、银行理财、REITs等伪安全资产。杠铃策略的精髓：不在中间地带浪费资金——要么绝对安全要么绝对冒险。","type":"rule"}],"quotes":["不要试图预测黑天鹅，而要让你自己从不确定性中获益。","你永远不会知道未来会怎样——但你可以为任何未来做好准备。"],"practice":["用Excel模拟10000次随机投资结果观察幸存者分布","计算自己组合在黑天鹅下的最大可能亏损上限"]},{"id":"b34","title":"反脆弱","author":"Nassim Taleb","category":"投资哲学","stage":6,"diff":4,"hours":14,"summary":"有些系统在压力波动混乱中反而变强——反脆弱。构建反脆弱投资组合。","chapters":[{"title":"第1章·脆弱vs反脆弱","level":"必修","points":[{"t":"三种状态","c":"脆弱=波动受损坚韧=波动不变反脆弱=波动获益。好系统=反脆弱的。","detail":"市场波动加大反而赚更多=反脆弱。只在牛市赚钱=脆弱。问：波动加大50%还能盈利？","highlights":[{"text":"核心：反脆弱=在波动中变强","color":"gold"},{"text":"方法：三种状态——反复练习","color":"blue"}]}]},{"title":"第2章·凸性效应","level":"推荐","points":[{"t":"损失有限+收益无限","c":"损失有限+收益无限=凸性(好)。做多=凸性裸做空=凹性。现金=终极反脆弱选择权。永远不all in。","detail":"保留可选择性。留余地在新信息出现后调整。","highlights":[{"text":"核心：可选择性=反脆弱核心","color":"gold"},{"text":"方法：损失有限+收益无限——反复练习","color":"blue"}]}]},{"title":"第3章·否定法与少即是多","level":"必修","points":[{"t":"通过减法变强","c":"反脆弱的核心方法：不去预测什么会成功——消除什么会致命。去掉脆弱性=自动反脆弱。饮食去掉糖>寻找超级食物。","detail":"投资应用：去掉杠杆→自动反脆弱。去掉单只重仓→自动分散。去掉频繁交易→自动降低成本。减少不如增加性感——但减法比加法有效得多。不求做对什么先求不做错什么。","highlights":[{"text":"核心：消除脆弱性=自动反脆弱","color":"gold"},{"text":"方法：去掉杠杆+分散+低频=反脆弱组合","color":"blue"}]}]},{"title":"第4章·林迪效应与时间检验","level":"推荐","points":[{"t":"老东西更长寿","c":"林迪效应：一本书已存活100年→预计再存活100年。新技术存活1年→预计再存活1年。越老的东西预期剩余寿命越长。","detail":"投资启示：已被验证100年的投资原则(安全边际分散长期持有)比最新量化策略更可能在未来继续有效。时间是终极过滤器——经得起时间检验的才是真知识。新策略需至少一个牛熊周期验证。","highlights":[{"text":"核心：经得起时间检验的才是真知识","color":"gold"},{"text":"规则：新策略需至少一个牛熊周期验证","color":"green"}]},{"t":"可选择性的数学优势","c":"可选择性=更多尝试+更低试错成本=更高找到凸性机会的概率。分散试错本身就是反脆弱策略。","detail":"风投模型=反脆弱：投100个各投$10万——99个归零亏$990万1个回报$1亿净赚$9010万。交易同理：多笔小仓位试错+少数大盈利覆盖全部成本。关键：每次试错成本必须可控。","highlights":[{"text":"核心：更多尝试+更低试错成本=更高成功概率","color":"gold"},{"text":"方法：可选择性的数学优势——反复练习","color":"blue"}]}]}],"knowledge_cards":[{"t":"反脆弱三元结构","c":"脆弱(Fragile)=波动受损：杠杆过度的投资组合、裸做空、集中重仓单一品种。坚韧(Robust)=波动不变：分散化的指数基金、多元化资产配置。反脆弱(Antifragile)=波动获益：持有虚值期权(波动越大越赚)、拥有现金可选权(暴跌后可抄底)、做多波动率策略。三类状态的判断标准：波动加大你的资产会发生什么？","type":"concept"},{"t":"反脆弱自检清单","c":"四个问题检验你的组合是否反脆弱：①如果波动率突然增加50%你的组合状态会更好还是更差？②如果发生从未见过的极端事件你有应对方案吗？③如果所有持仓同时下跌30%你还能继续交易吗？④你的策略在哪种市场环境中会失效？四条中有任何一条答案不乐观=组合存在致命脆弱性需要立即调整。","type":"rule"}],"quotes":["风会吹灭蜡烛，却能让火燃烧得更旺。","大自然最喜欢的是——那些在被打击后变得更强的事物。"],"practice":["用反脆弱四问检验自己的投资组合逐条回答","列出组合中所有伪安全资产并制定替换计划"]},{"id":"b35","title":"随机漫步的傻瓜","author":"Nassim Taleb","category":"交易心理","stage":1,"diff":2,"hours":10,"summary":"塔勒布处女作。揭示我们如何被随机性愚弄——把运气当能力、把噪音当信号。读完后对所有投资大师产生深刻怀疑。","chapters":[{"title":"第1章·幸存者偏差","level":"必修","points":[{"t":"猴子的故事","c":"1000只猴子投硬币总有一只连续10次正面——那只猴子认为自己有特殊能力。这就是很多投资大师的真相。","detail":"你只看到成功的幸存者，看不到失败的99%。某基金连续5年跑赢可能纯粹靠运气——初始1000只可能950只已消失。","highlights":[{"text":"核心：你只看到幸存者——看不到失败者","color":"gold"},{"text":"方法：猴子的故事——反复练习","color":"blue"}]}]},{"title":"第2章·噪音vs信号","level":"必修","points":[{"t":"区分方法","c":"有因果逻辑+持续时间长+可重复=信号。无因果+时间短+不可重复=噪音。","detail":"问自己：①为什么存在这个规律？②持续了多久？③反过来做会怎样？三个都答不上=噪音。","highlights":[{"text":"规则：信号=因果+时间+可重复","color":"green"}]}]},{"title":"第3章·被随机性愚弄","level":"推荐","points":[{"t":"生活中的随机性","c":"把运气当能力是人类最普遍的认知偏差。成功时归因于自己，失败时归因于运气——但往往相反。","detail":"塔勒布建议：对任何声称能预测市场的人保持根本性怀疑。没有人能持续预测——如果有，他已经是世界首富了。","highlights":[{"text":"思考：你崇拜的大师是实力还是运气？","color":"purple"},{"text":"方法：生活中的随机性——反复练习","color":"blue"}]}]},{"title":"第4章·概率思维的日常训练","level":"必修","points":[{"t":"替代历史思维","c":"每次看到结果问：有多少种其他可能的结果？如果重来1000次这个结果出现的概率是多少？训练自己用概率视角看世界。","detail":"塔勒布的核心思维工具：考虑已发生事件的所有可能替代路径。某基金经理连续3年跑赢——问：初始1000名基金经理中3年连续跑赢的概率分布？至少几个纯靠运气。替代路径思维=概率思维的基础训练。","highlights":[{"text":"方法：每次问——还有其他可能结果吗？","color":"blue"},{"text":"核心：概率思维=考虑所有替代路径","color":"gold"}]},{"t":"遍历性与时间概率","c":"遍历性：群体平均值≠个体长期结果。100人赌一次期望为正≠你赌100次期望为正——可能第50次就爆仓了。","detail":"经典谬误：某策略年化20%=每年安心取20%生活。错误——如果第1年亏30%你不仅没钱生活本金也缩水。时间序列风险(路径依赖)完全不同于截面风险。生存是第一位的。","highlights":[{"text":"警示：群体平均值≠个体长期结果","color":"red"},{"text":"核心：生存第一——考虑路径依赖风险","color":"gold"}]}]}],"knowledge_cards":[{"t":"幸存者偏差的数学","c":"假设10000名基金经理每人纯靠运气管理基金。期望50%跑赢基准。第一年5000人跑赢。第二年2500人。第三年1250人。第十年约10人连续跑赢。这10人会被媒体称为天才——但他们只是幸运的硬币投掷者。幸存者偏差让你只看到成功案例——看不到坟墓里的失败者。每次看到成功故事必问：初始样本有多大？失败者在哪里？","type":"concept"},{"t":"噪音过滤三步法","c":"①因果测试：这个规律有合理的因果逻辑吗？（无法解释因果=噪音概率大）②时间测试：这个规律持续了多久？（<1年=极可能是随机波动）③反转测试：反过来解释能说得通吗？（涨因为流动性放松——跌也因为流动性？=事后合理化）三步中任一步不通过=视为噪音放弃该信号。每天练习用三步法过滤一个市场观点。","type":"rule"}],"quotes":["我们更容易被随机性愚弄，而不是被复杂性愚弄。","如果你把一群猴子放在打字机前，总会有一只打出《哈姆雷特》——但这不意味着它会打出下一部。"],"practice":["每天用三步噪音过滤法分析一篇市场评论","列出最近3次把运气当能力的交易反思偏差"]},{"id":"b36","title":"价值","author":"张磊","category":"价值投资","stage":6,"diff":3,"hours":12,"summary":"高瓴资本创始人张磊投资哲学。长期主义+研究驱动+价值创造。","chapters":[{"title":"第1章·长期主义","level":"必修","points":[{"t":"流水不争先","c":"真大钱不靠短期交易——靠长期持有最优秀公司。高瓴平均持股7-10年。","detail":"寻找未来10-20年行业：消费升级医疗健康新能源企业服务先进制造。投进去不轻易出来。","highlights":[{"text":"核心：长期主义=10年持有","color":"gold"},{"text":"方法：流水不争先——反复练习","color":"blue"}]}]},{"title":"第2章·动态护城河","level":"推荐","points":[{"t":"创新能力=真护城河","c":"传统静态护城河在变革时代不可靠。柯达有最强胶片品牌——数码一出全没了。","detail":"只有持续创新企业有真正护城河。价值投资不是守旧——是找到能持续创造价值的企业。","highlights":[{"text":"核心：动态护城河=持续创新","color":"gold"},{"text":"方法：创新能力=真护城河——反复练习","color":"blue"}]}]},{"title":"第3章·研究驱动深度认知","level":"必修","points":[{"t":"研究≥3个月才决策","c":"高瓴团队对每家公司至少研究3个月以上才决策。深度研究=读财报+实地调研+访谈高管客户供应商+行业专家验证。","detail":"张磊：绝大多数人花在选股上的时间不如花在选餐馆上的时间。深度研究建立认知优势——当市场恐慌时你的认知让你敢于逆势加仓。信息人人可得洞察必须深挖。","highlights":[{"text":"核心：深度研究=认知优势=逆势加仓信心","color":"gold"},{"text":"警示：选股时间不如选餐馆时间=亏损根源","color":"red"}]},{"t":"第一性原理思维","c":"不问市场认为它值多少——问这个生意的本质价值是什么。穿透财务数据看到商业模式底层逻辑。","detail":"高瓴投京东时市场质疑其亏损。张磊看到：自建物流=不可复制的护城河+用户体验壁垒。本质判断超越当期财务——研究本质而非表象。问：如果这家公司明天私有化你愿意多少钱买下整个公司？","highlights":[{"text":"核心：穿透财务看到商业模式底层逻辑","color":"gold"},{"text":"方法：第一性原理思维——反复练习","color":"blue"}]}]},{"title":"第4章·价值创造者生态","level":"推荐","points":[{"t":"从发现价值到创造价值","c":"传统价值投资=发现低估买入等待回归。高瓴升级版=投后赋能帮助被投企业创造增量价值让蛋糕变大。","detail":"纯粹的财务投资者是价值的寄生虫。高瓴提供数字化赋能+管理升级+人才引进+战略梳理——把被投企业从1做到10。投资不是零和博弈是价值共创。交易者也应思考：你的入场为市场提供了什么？","highlights":[{"text":"洞见：投资不是零和博弈——是价值共创","color":"purple"},{"text":"核心：从发现价值→创造增量价值","color":"gold"}]}]}],"knowledge_cards":[{"t":"长期主义的底层逻辑","c":"长期主义不是简单的持有时间长——是选择被时间偏爱的商业模式。具有网络效应、规模效应、品牌护城河的企业——时间是其朋友而非敌人。每年竞争优势增强而非减弱。高瓴选择企业的核心标准：10年后这家公司比今天更强吗？如果答案是肯定的——短期波动都是噪音。现金流折现模型中90%价值在10年以后。","type":"concept"},{"t":"深度研究决策框架","c":"①企业所处行业赛道是否10年以上存在②是否行业前2-3名有定价权③管理层诚信且有企业家精神④预估持股周期至少5年⑤研究时间至少3个月以上涵盖至少一次季报周期⑥与企业上下游、客户、竞争对手交叉验证。六条全部满足才进入投资决策流程。任何一条存疑=继续研究或放弃。","type":"rule"}],"quotes":["流水不争先，争的是滔滔不绝。","在长期主义之路上，与伟大格局观者同行，做时间的朋友。"],"practice":["选一家公司做3个月深度研究跟踪写研究日志","用第一性原理重新评估你持仓中最大的一笔投资"]},{"id":"b37","title":"投资中最简单的事","author":"邱国鹭","category":"价值投资","stage":6,"diff":2,"hours":10,"summary":"高毅资产创始人20年浓缩。便宜是硬道理+定价权+胜而后战。","chapters":[{"title":"第1章·三好框架","level":"必修","points":[{"t":"好生意+好公司+好价格","c":"好生意：毛利率>30%ROE>15%自由现金流正。好公司：双增+管理层持股。好价格：PE<行业均值20%。","detail":"买入价格=你唯一保护。价格够低=犯错空间大。价格太高=必须永远对。把安全边际留足。","highlights":[{"text":"核心：三好=好生意+好公司+好价格","color":"gold"},{"text":"方法：好生意+好公司+好价格——反复练习","color":"blue"}]}]},{"title":"第2章·宁数月亮","level":"推荐","points":[{"t":"选龙头不选跟风","c":"行业第一第二不选小公司。龙头有定价权小公司被动接受价格。定价权=最强护城河。","detail":"能涨价而不流失客户=真护城河。茅台提价照样卖完——最强竞争力。","highlights":[{"text":"核心：定价权=最强护城河","color":"gold"},{"text":"方法：选龙头不选跟风——反复练习","color":"blue"}]}]},{"title":"第3章·安全边际量化","level":"必修","points":[{"t":"便宜是硬道理","c":"买入价决定最终收益的70%+。PE<历史均值30%以下+PB<2+股息率>3%=深度安全边际。价格够低=犯错空间大。","detail":"邱国鹭：再好的公司买贵了也赚不到钱。沃尔玛$100是好公司$30是伟大投资。安全边际给你三重保护：①估值修复收益②企业成长收益③估值下行的缓冲空间。永远留足安全边际。","highlights":[{"text":"核心：买入价决定最终收益70%+","color":"gold"},{"text":"规则：PE<历史均值30%+PB<2+股息率>3%","color":"green"}]},{"t":"三低一高选股法","c":"低PE+低PB+低PEG+高股息=四重安全边际。四项全部满足=深度价值+下行空间有限+上行空间打开。","detail":"邱国鹭用量化标准筛选A股：PE<15+PB<1.5+PEG<1+股息率>2%。这个组合历史上年化跑赢指数5-8%回撤更小。简单≠无效——简单且纪律执行=有效。复杂的模型往往过度拟合历史。","highlights":[{"text":"核心：简单≠无效——简单+纪律=有效","color":"gold"},{"text":"方法：三低一高选股法——反复练习","color":"blue"}]}]},{"title":"第4章·逆向投资的时机","level":"推荐","points":[{"t":"胜而后战","c":"不在行业低谷猜底——等龙头公司已经开始盈利改善再入场。等待确定性改善=放弃最低价换更高确定性。","detail":"邱国鹭在2013-2014白酒塑化剂危机后没有立即抄底——等贵州茅台盈利改善信号出现后才重仓。鱼头不吃吃鱼身——放弃底部10-15%涨幅换取更高确定性。耐心等待是最被低估的投资能力。","highlights":[{"text":"策略：放弃最低价换更高确定性=吃鱼身","color":"green"},{"text":"核心：耐心等待是最被低估的能力","color":"gold"}]},{"t":"人多的地方不去","c":"热门赛道+高估值+一致预期=危险组合。无人问津+低估值+分歧大=机会组合。逆向不是为反而反——是独立思考远离人群。","detail":"逆向投资最大障碍：从众压力。别人都在赚的时候你空仓=心理折磨。但回顾历史：每次一致性极端乐观后=大跌前兆。关键指标：新基金发行量激增+媒体天天报牛市=危险信号。","highlights":[{"text":"警示：新基金暴增+媒体天天牛市=危险信号","color":"red"},{"text":"核心：逆向=独立思考远离人群","color":"gold"}]}]}],"knowledge_cards":[{"t":"安全边际的数学意义","c":"安全边际不只是便宜——是概率优势。如果你估计企业内在价值100元但估值可能高估20%，那么以50元买入即使你的估值错误仍有安全空间。安全边际=为认知不足购买的保险。格雷厄姆公式：安全边际=1-(买入价÷保守估算的内在价值)。>30%=较大安全边际。投资第一课不是如何赚钱——是如何不亏钱。","type":"concept"},{"t":"三好选股量化清单","c":"好生意：毛利率>30%(有定价权)+ROE>15%(资本效率高)+自由现金流为正(真赚钱非纸面利润)。好公司：营收利润双增20%+(成长性)+管理层持股/增持(利益一致)+持续分红(现金流真实)。好价格：PE<行业均值20%+PB<行业均值+PEG<1。三好全部满足=深度价值买点。缺任一=等待更好时机。","type":"rule"}],"quotes":["投资应该是简单的事——好生意、好公司、好价格。","宁数月亮，不数星星——选龙头不选跟风。"],"practice":["用三好标准筛选当前全市场给出评分排序","记录逆向买入时的市场情绪数据建立逆向指标"]}],"stages":[{"id":"s1","name":"一阶·交易心智启蒙","icon":"🧠","sub":"建立正确的市场观","desc":"从利弗莫尔传奇到概率思维——先改造大脑再谈技术。这一阶段的所有内容都在回答一个问题：你凭什么能在这个市场上赚钱？","books":["b06","b17","b07","b35"]},{"id":"s2","name":"二阶·技术分析基石","icon":"📊","sub":"K线→趋势→形态→指标","desc":"按道氏理论→蜡烛图→形态学→指标体系的顺序，从最基础的价格语言学到完整的技术分析工具链。先看懂图再说交易。","books":["b09","b01","b02","b03","b30"]},{"id":"s3","name":"三阶·分析框架与系统","icon":"⚙️","sub":"从分析到执行的闭环","desc":"学了技术不等于会交易。这一阶段教你如何把技术工具整合成可执行的交易系统——三重滤网、海龟系统、123法则——从分析到下单的完整流程。","books":["b04","b05","b08","b28","b20","b13"]},{"id":"s4","name":"四阶·策略构建与风控","icon":"🎯","sub":"找到你的盈利模式","desc":"学会走路后开始学跑步。专精一种策略(突破/动量/形态选股)，建立日常流程，用金字塔加仓放大收益。从'不亏钱'进化到'赚钱'。","books":["b14","b19","b29","b12","b31","b32","b10"]},{"id":"s5","name":"五阶·市场微观与投资哲学","icon":"🔬","sub":"穿透表象看本质","desc":"威科夫追踪聪明钱、索罗斯反身性理解泡沫、芒格多元思维——从市场微观结构到宏观哲学，建立你自己的投资世界观。","books":["b11","b25","b26","b27","b24"]},{"id":"s6","name":"六阶·价值投资与复利人生","icon":"🏛️","sub":"从交易员到投资者","desc":"交易让你活着，投资让你富有。格雷厄姆安全边际、巴菲特护城河、塔勒布杠铃策略——最终目标是构建能穿越周期的长期财富体系。","books":["b15","b16","b23","b21","b22","b33","b34","b36","b37","b18"]}],"edges":[{"from":"b06","to":"b17","type":"相似","label":"交易心态"},{"from":"b07","to":"b35","type":"相似","label":"概率思维"},{"from":"b03","to":"b30","type":"相似","label":"形态+指标"},{"from":"b04","to":"b30","type":"相似","label":"完整框架"},{"from":"b08","to":"b28","type":"相似","label":"系统化"},{"from":"b21","to":"b22","type":"相似","label":"林奇体系"},{"from":"b31","to":"b32","type":"相似","label":"大师访谈"},{"from":"b15","to":"b16","type":"相似","label":"格雷厄姆"},{"from":"b33","to":"b34","type":"相似","label":"塔勒布系列"},{"from":"b01","to":"b03","type":"互补","label":"K线+形态"},{"from":"b05","to":"b14","type":"互补","label":"系统+流程"},{"from":"b08","to":"b13","type":"互补","label":"系统+资金"},{"from":"b13","to":"b14","type":"互补","label":"资金+执行"},{"from":"b20","to":"b28","type":"互补","label":"防守+进攻"},{"from":"b10","to":"b11","type":"互补","label":"波浪+供需"},{"from":"b23","to":"b24","type":"互补","label":"巴菲特+芒格"},{"from":"b25","to":"b24","type":"互补","label":"投资+思维"},{"from":"b36","to":"b37","type":"互补","label":"PE+本土"},{"from":"b01","to":"b02","type":"进阶","label":"基础→高级"},{"from":"b09","to":"b03","type":"进阶","label":"理论→形态"},{"from":"b06","to":"b19","type":"进阶","label":"传记→操盘"},{"from":"b03","to":"b04","type":"进阶","label":"形态→框架"},{"from":"b08","to":"b19","type":"进阶","label":"系统→纪律"},{"from":"b15","to":"b23","type":"进阶","label":"格雷厄姆→巴菲特"},{"from":"b16","to":"b23","type":"进阶","label":"格雷厄姆→巴菲特"},{"from":"b12","to":"b29","type":"进阶","label":"CANSLIM→SEPA"},{"from":"b34","to":"b35","type":"进阶","label":"反脆弱→随机"},{"from":"b06","to":"b07","type":"对立","label":"直觉vs概率"},{"from":"b08","to":"b29","type":"对立","label":"跟踪vs动量"},{"from":"b15","to":"b29","type":"对立","label":"价值vs动量"},{"from":"b25","to":"b23","type":"对立","label":"防御vs成长"},{"from":"b26","to":"b27","type":"对立","label":"反身性vs机器"},{"from":"b09","to":"b10","type":"奠基","label":"理论起点"},{"from":"b06","to":"b09","type":"奠基","label":"直觉→理论"},{"from":"b24","to":"b33","type":"奠基","label":"思维→风险"}]}
 </script>
-
 <script>
-window.onerror=function(m,t,l){var f=document.getElementById('static-fallback');if(f){f.innerHTML='<h2 style="color:#d4a843">📈 StockKlineMaster</h2><p style="color:#e0555a;font-size:14px">加载异常，请尝试：</p><p style="color:#8899aa;font-size:13px">① 完全关闭APP后重新打开<br>② 清除APP缓存<br>③ 重启手机</p><button onclick="location.reload()" style="margin-top:12px;padding:8px 24px;background:#d4a843;color:#0a1628;border:none;border-radius:6px;font-size:14px;font-weight:700">重试</button>';f.style.display='flex'}return!0};
-var courses_data = JSON.parse(document.getElementById('courses-data').textContent);
-
-// 全局状态
-var state = {
-  completedChapters: [],
-  unlockedChapter: 1,
-  currentTab: 'learn',
-  currentChapter: null,
-  quizResults: {},
-  totalScore: 0,
-  totalAnswered: 0
-};
-
-// 初始化
-function init() {
-  loadState();
-  document.getElementById('loading').style.display = 'none';
-  switchTab('learn');
-  renderChapterList();
-  renderQuickRef();
-  renderMyPage();
-  updateProgress();
-  document.getElementById('static-fallback').style.display = 'none';
-}
-
-// localStorage安全读写
-function loadState() {
-  try {
-    var raw = localStorage.getItem('stockkline_state');
-    if (raw) {
-      var saved = JSON.parse(raw);
-      if (saved.completedChapters) state.completedChapters = saved.completedChapters;
-      if (saved.unlockedChapter) state.unlockedChapter = saved.unlockedChapter;
-      if (saved.quizResults) state.quizResults = saved.quizResults;
-      if (saved.totalScore !== undefined) state.totalScore = saved.totalScore;
-      if (saved.totalAnswered !== undefined) state.totalAnswered = saved.totalAnswered;
-    }
-  } catch(e) {}
-}
-
-function saveState() {
-  try {
-    localStorage.setItem('stockkline_state', JSON.stringify({
-      completedChapters: state.completedChapters,
-      unlockedChapter: state.unlockedChapter,
-      quizResults: state.quizResults,
-      totalScore: state.totalScore,
-      totalAnswered: state.totalAnswered
-    }));
-  } catch(e) {}
-}
-
-// Tab切换
-function switchTab(tab) {
-  state.currentTab = tab;
-  var contents = document.querySelectorAll('.tab-content');
-  for (var i = 0; i < contents.length; i++) contents[i].classList.remove('active');
-  document.getElementById('tab-' + tab).classList.add('active');
-  var btns = document.querySelectorAll('.tab-btn');
-  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
-  document.getElementById('btn-' + tab).classList.add('active');
-  state.currentChapter = null;
-}
-
-// 进度更新
-function updateProgress() {
-  var pct = state.completedChapters.length > 0 ? Math.round(state.completedChapters.length / courses_data.length * 100) : 0;
-  document.getElementById('progress-fill').style.width = pct + '%';
-  document.getElementById('progress-text').textContent = state.completedChapters.length + '/' + courses_data.length + ' (' + pct + '%)';
-}
-
-function showToast(msg) {
-  var t = document.createElement('div');
-  t.className = 'toast';
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(function() { t.remove(); }, 1600);
-}
-
-// ========== 学习Tab ==========
-function renderChapterList() {
-  var html = '';
-  for (var i = 0; i < courses_data.length; i++) {
-    var ch = courses_data[i];
-    var locked = (ch.id > state.unlockedChapter);
-    var completed = state.completedChapters.indexOf(ch.id) !== -1;
-    html += '<div class="chapter-card' + (locked ? ' locked' : '') + '" onclick="' + (locked ? '' : 'openChapter(' + ch.id + ')') + '">';
-    html += '<div class="ch-num">第' + ch.id + '章 ' + (locked ? '🔒' : (completed ? '✅' : ch.icon)) + '</div>';
-    html += '<div class="ch-title">' + ch.title;
-    if (completed) html += '<span class="ch-completed">已完成</span>';
-    html += '</div>';
-    html += '<div class="ch-sub">' + ch.subtitle + '</div>';
-    html += '<div class="ch-meta">📚 ' + ch.sections.length + '个知识点 | ✏️ ' + ch.quiz.length + '道测试</div>';
-    html += '</div>';
-  }
-  document.getElementById('chapter-list').innerHTML = html;
-}
-
-function openChapter(id) {
-  var ch = courses_data[id - 1];
-  state.currentChapter = id;
-  var html = '<div class="reader">';
-
-  // 渲染每个section
-  for (var i = 0; i < ch.sections.length; i++) {
-    var sec = ch.sections[i];
-    html += '<div class="section"><div class="section-title">' + sec.title + '</div>';
-    html += '<div class="section-content">' + sec.content + '</div>';
-
-    // Canvas图表
-    if (sec.canvas) {
-      html += '<canvas id="canvas-' + sec.canvas + '" width="360" height="200"></canvas>';
-    }
-
-    html += '</div>';
-  }
-
-  // 测验区
-  html += '<div class="quiz-wrap"><h3>📝 章节测验</h3>';
-  html += '<div id="quiz-questions">';
-  for (var j = 0; j < ch.quiz.length; j++) {
-    var q = ch.quiz[j];
-    html += '<div class="quiz-q"><div class="q-text">' + (j + 1) + '. ' + q.q + '</div>';
-    for (var k = 0; k < q.a.length; k++) {
-      html += '<button class="q-opt" onclick="answerQuiz(' + id + ',' + j + ',' + k + ',this)">' + q.a[k] + '</button>';
-    }
-    html += '</div>';
-  }
-  html += '</div>';
-  html += '<div id="quiz-result-' + id + '"></div>';
-
-  // 按钮
-  html += '<div class="btn-row">';
-  html += '<button class="btn-back" onclick="switchTab(\'learn\');renderChapterList()">← 返回列表</button>';
-  if (id > 1) {
-    html += '<button class="btn-secondary" onclick="openChapter(' + (id - 1) + ')">上一章</button>';
-  }
-  if (id < courses_data.length) {
-    html += '<button class="btn-primary" id="btn-next-' + id + '" onclick="nextChapter()" disabled>下一章 →</button>';
-  }
-  html += '</div></div>';
-
-  document.getElementById('tab-learn').innerHTML = html;
-  document.getElementById('tab-learn').classList.add('active');
-  document.getElementById('tab-quick').classList.remove('active');
-
-  // 延迟画Canvas
-  setTimeout(function() {
-    drawCanvasesForChapter(id);
-  }, 200);
-
-  // 恢复之前测验结果
-  if (state.quizResults[id]) {
-    markQuizAnswers(id);
-  }
-}
-
-// 测验答题
-function answerQuiz(chId, qIdx, optIdx, btn) {
-  var ch = courses_data[chId - 1];
-  var q = ch.quiz[qIdx];
-  var correct = q.correct;
-
-  // 禁用该题所有选项
-  var parent = btn.parentElement;
-  var opts = parent.querySelectorAll('.q-opt');
-  for (var i = 0; i < opts.length; i++) {
-    opts[i].disabled = true;
-    if (i === correct) opts[i].classList.add('correct');
-    if (i === optIdx && i !== correct) opts[i].classList.add('wrong');
-  }
-
-  // 记录结果
-  if (!state.quizResults[chId]) state.quizResults[chId] = {};
-  var isCorrect = (optIdx === correct);
-  state.quizResults[chId][qIdx] = isCorrect;
-  state.totalAnswered++;
-
-  if (isCorrect) {
-    state.totalScore++;
-    showToast('✅ 正确！');
-  } else {
-    showToast('❌ 正确答案是：' + q.a[correct]);
-  }
-
-  saveState();
-
-  // 检查是否全部答完
-  checkChapterCompletion(chId);
-}
-
-function markQuizAnswers(chId) {
-  var results = state.quizResults[chId];
-  if (!results) return;
-  var ch = courses_data[chId - 1];
-  for (var qIdx in results) {
-    if (results.hasOwnProperty(qIdx)) {
-      var correct = ch.quiz[parseInt(qIdx)].correct;
-      var qDiv = document.querySelectorAll('#quiz-questions .quiz-q')[parseInt(qIdx)];
-      if (qDiv) {
-        var opts = qDiv.querySelectorAll('.q-opt');
-        for (var i = 0; i < opts.length; i++) {
-          opts[i].disabled = true;
-          if (i === correct) opts[i].classList.add('correct');
-        }
-        if (!results[qIdx]) {
-          // 找用户选错的
-          opts[parseInt(Object.keys(results).find(function(k){return results[k]===false && parseInt(k)===parseInt(qIdx)}))].classList.add('wrong');
-        }
-      }
-    }
-  }
-}
-
-function checkChapterCompletion(chId) {
-  var ch = courses_data[chId - 1];
-  var results = state.quizResults[chId] || {};
-  var allAnswered = Object.keys(results).length >= ch.quiz.length;
-
-  if (allAnswered) {
-    var total = ch.quiz.length;
-    var score = 0;
-    for (var k in results) { if (results[k]) score++; }
-    var passScore = Math.ceil(total * 0.6); // 60%通过
-
-    var resultDiv = document.getElementById('quiz-result-' + chId);
-    if (score >= passScore) {
-      resultDiv.innerHTML = '<div class="quiz-result" style="background:rgba(76,175,132,0.15)">🎉 恭喜通过！得分：' + score + '/' + total;
-      if (state.completedChapters.indexOf(chId) === -1) {
-        state.completedChapters.push(chId);
-        if (chId >= state.unlockedChapter) {
-          state.unlockedChapter = chId + 1;
-        }
-        saveState();
-        updateProgress();
-      }
-      var nextBtn = document.getElementById('btn-next-' + chId);
-      if (nextBtn) nextBtn.disabled = false;
-    } else {
-      resultDiv.innerHTML = '<div class="quiz-result" style="background:rgba(224,85,90,0.15)">📚 得分：' + score + '/' + total + '，需' + passScore + '分通过，请检查错题重新作答</div>';
-      // 允许重做
-      delete state.quizResults[chId];
-      saveState();
-      setTimeout(function() { openChapter(chId); }, 1500);
-    }
-  }
-}
-
-function nextChapter() {
-  var nextId = state.currentChapter + 1;
-  if (nextId <= courses_data.length) {
-    openChapter(nextId);
-  }
-}
-
-// ========== Canvas绘图 ==========
-function drawCanvasesForChapter(chId) {
-  var ch = courses_data[chId - 1];
-  for (var i = 0; i < ch.sections.length; i++) {
-    var sec = ch.sections[i];
-    if (!sec.canvas) continue;
-    var canvas = document.getElementById('canvas-' + sec.canvas);
-    if (!canvas) continue;
-    var ctx = canvas.getContext('2d');
-    var w = canvas.width || 360;
-    var h = canvas.height || 200;
-    // fallback尺寸
-    if (w < 10) w = 360;
-    if (h < 10) h = 200;
-
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#0a1628';
-    ctx.fillRect(0, 0, w, h);
-
-    // 根据类型调用不同绘图函数
-    if (sec.canvas === 'single_kline') drawSingleKline(ctx, w, h);
-    else if (sec.canvas === 'yang_yin') drawYangYin(ctx, w, h);
-    else if (sec.canvas === 'hammer') drawHammer(ctx, w, h);
-    else if (sec.canvas === 'engulfing') drawEngulfing(ctx, w, h);
-    else if (sec.canvas === 'ma_cross') drawMACross(ctx, w, h);
-    else if (sec.canvas === 'macd') drawMACD(ctx, w, h);
-    else if (sec.canvas === 'rsi') drawRSI(ctx, w, h);
-    else if (sec.canvas === 'bollinger') drawBollinger(ctx, w, h);
-    else if (sec.canvas === 'elliott_wave') drawElliott(ctx, w, h);
-    else genericKlineCanvas(ctx, w, h, sec.canvas);
-  }
-}
-
-// 工具函数
-function drawGrid(ctx, w, h) {
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-  ctx.lineWidth = 0.5;
-  for (var y = 0; y < h; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
-  for (var x = 0; x < w; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
-}
-
-function drawCandle(ctx, x, open, close, high, low, bodyW) {
-  var isGreen = close > open;
-  ctx.strokeStyle = isGreen ? '#4caf84' : '#e0555a';
-  ctx.fillStyle = isGreen ? '#4caf84' : '#e0555a';
-  // 影线
-  ctx.beginPath();
-  ctx.moveTo(x, high);
-  ctx.lineTo(x, low);
-  ctx.stroke();
-  // 实体
-  var topY = Math.min(open, close);
-  var botY = Math.max(open, close);
-  var bodyH = botY - topY;
-  if (bodyH < 1) bodyH = 1;
-  ctx.fillStyle = isGreen ? 'rgba(76,175,132,0.85)' : 'rgba(224,85,90,0.85)';
-  ctx.fillRect(x - bodyW/2, topY, bodyW, bodyH);
-}
-
-// 单根K线示意
-function drawSingleKline(ctx, w, h) {
-  drawGrid(ctx, w, h);
-  var cx = w/2, oh = 50, cl = 90, hi = 30, lo = 140;
-  drawCandle(ctx, cx, oh, cl, hi, lo, 20);
-
-  // 标注
-  ctx.fillStyle = '#d4a843';
-  ctx.font = 'bold 13px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('最高价', cx, hi - 8);
-  ctx.fillText('收盘价', cx + 50, cl - 5);
-  ctx.fillText('开盘价', cx + 50, oh + 12);
-  ctx.fillText('最低价', cx, lo + 18);
-
-  // 虚线标注
-  ctx.strokeStyle = 'rgba(212,168,67,0.4)';
-  ctx.setLineDash([3,3]);
-  ctx.beginPath(); ctx.moveTo(cx, hi); ctx.lineTo(cx + 60, hi); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx, lo); ctx.lineTo(cx + 60, lo); ctx.stroke();
-  ctx.setLineDash([]);
-
-  ctx.fillStyle = '#4caf84';
-  ctx.font = '12px sans-serif';
-  ctx.fillText('阳线（收盘>开盘）', cx, h - 10);
-}
-
-// 阳线阴线对比
-function drawYangYin(ctx, w, h) {
-  drawGrid(ctx, w, h);
-  // 阳线
-  drawCandle(ctx, w/3, 60, 100, 30, 140, 20);
-  ctx.fillStyle = '#4caf84';
-  ctx.font = '12px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('阳线', w/3, h - 10);
-
-  // 阴线
-  drawCandle(ctx, w*2/3, 100, 60, 140, 30, 20);
-  ctx.fillStyle = '#e0555a';
-  ctx.fillText('阴线', w*2/3, h - 10);
-
-  ctx.fillStyle = '#d4a843';
-  ctx.font = '13px sans-serif';
-  ctx.fillText('收盘价 ＞ 开盘价', w/3, 20);
-  ctx.fillText('收盘价 ＜ 开盘价', w*2/3, 20);
-}
-
-// 锤子线
-function drawHammer(ctx, w, h) {
-  drawGrid(ctx, w, h);
-  // 三根下跌阴线
-  for (var i = 0; i < 3; i++) {
-    drawCandle(ctx, 80 + i*60, 100 + i*10, 70 + i*10, 120 + i*10, 50 + i*10, 14);
-  }
-  // 锤子线
-  drawCandle(ctx, 260, 60, 68, 45, 140, 14);
-  // 箭头
-  ctx.fillStyle = '#d4a843';
-  ctx.font = '12px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('下跌趋势', 140, 25);
-  ctx.fillText('锤子线反转！', 260, 35);
-  ctx.strokeStyle = '#d4a843';
-  ctx.setLineDash([3,3]);
-  ctx.beginPath(); ctx.moveTo(260, 140); ctx.lineTo(260, 170); ctx.stroke();
-  ctx.fillText('长下影线=支撑', 260, 185);
-  ctx.setLineDash([]);
-}
-
-// 吞没形态
-function drawEngulfing(ctx, w, h) {
-  drawGrid(ctx, w, h);
-  // 阴线（小）
-  drawCandle(ctx, 130, 90, 65, 110, 45, 14);
-  ctx.fillStyle = '#e0555a';
-  ctx.font = '11px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('阴线', 130, 35);
-
-  // 阳线（大，吞没）
-  drawCandle(ctx, 210, 55, 110, 40, 120, 14);
-  ctx.fillStyle = '#4caf84';
-  ctx.fillText('阳线（吞没）', 210, 30);
-
-  // 虚线框标注吞没范围
-  ctx.strokeStyle = 'rgba(212,168,67,0.5)';
-  ctx.setLineDash([4,4]);
-  ctx.beginPath();
-  ctx.rect(100, 40, 130, 90);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle = '#d4a843';
-  ctx.font = '12px sans-serif';
-  ctx.fillText('← 完全吞没 →', 165, 170);
-}
-
-// MA金叉死叉
-function drawMACross(ctx, w, h) {
-  drawGrid(ctx, w, h);
-  var pts5 = [[30,140],[80,130],[130,115],[180,95],[230,70],[280,60],[330,55]];
-  var pts20 = [[30,150],[80,135],[130,125],[180,120],[230,105],[280,90],[330,80]];
-
-  // 画MA20
-  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(pts20[0][0], pts20[0][1]);
-  for (var i=1;i<pts20.length;i++) ctx.lineTo(pts20[i][0], pts20[i][1]);
-  ctx.stroke();
-
-  // 画MA5
-  ctx.strokeStyle = '#d4a843';
-  ctx.lineWidth = 2.5;
-  ctx.beginPath(); ctx.moveTo(pts5[0][0], pts5[0][1]);
-  for (var i=1;i<pts5.length;i++) ctx.lineTo(pts5[i][0], pts5[i][1]);
-  ctx.stroke();
-
-  // 标注
-  ctx.fillStyle = '#d4a843';
-  ctx.font = '12px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('MA5', 60, 125);
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  ctx.fillText('MA20', 60, 145);
-
-  // 金叉标注
-  ctx.fillStyle = '#4caf84';
-  ctx.font = 'bold 14px sans-serif';
-  ctx.fillText('金叉买入!', 200, 70);
-  ctx.strokeStyle = '#4caf84';
-  ctx.setLineDash([2,2]);
-  ctx.beginPath();
-  ctx.arc(180, 105, 20, 0, Math.PI*2);
-  ctx.stroke();
-  ctx.setLineDash([]);
-}
-
-// MACD
-function drawMACD(ctx, w, h) {
-  drawGrid(ctx, w, h);
-  // DIF和DEA
-  ctx.strokeStyle = '#d4a843';
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(30,100);ctx.lineTo(80,90);ctx.lineTo(130,75);ctx.lineTo(180,65);ctx.lineTo(230,70);ctx.lineTo(280,60);ctx.lineTo(330,55);
-  ctx.stroke();
-  ctx.fillStyle = '#d4a843';
-  ctx.font = '11px sans-serif';
-  ctx.fillText('DIF', 340, 55);
-
-  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(30,105);ctx.lineTo(80,100);ctx.lineTo(130,90);ctx.lineTo(180,85);ctx.lineTo(230,78);ctx.lineTo(280,70);ctx.lineTo(330,65);
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,0.4)';
-  ctx.fillText('DEA', 340, 65);
-
-  // 柱状图
-  for (var i=0;i<7;i++) {
-    var bx = 50 + i*45, bh = Math.abs(30 - i*5);
-    ctx.fillStyle = i < 4 ? '#4caf84' : '#e0555a';
-    ctx.fillRect(bx-4, 120, 8, bh);
-  }
-
-  ctx.fillStyle = '#d4a843';
-  ctx.font = '12px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('柱状图（量能）', 180, 165);
-}
-
-// RSI
-function drawRSI(ctx, w, h) {
-  drawGrid(ctx, w, h);
-  // 超买线
-  ctx.strokeStyle = '#e0555a';
-  ctx.setLineDash([5,3]);
-  ctx.beginPath(); ctx.moveTo(0, 50); ctx.lineTo(w, 50); ctx.stroke();
-  ctx.fillStyle = '#e0555a';
-  ctx.font = '11px sans-serif';
-  ctx.fillText('超买线 70', 10, 45);
-
-  // 超卖线
-  ctx.strokeStyle = '#4caf84';
-  ctx.beginPath(); ctx.moveTo(0, 130); ctx.lineTo(w, 130); ctx.stroke();
-  ctx.fillStyle = '#4caf84';
-  ctx.fillText('超卖线 30', 10, 145);
-  ctx.setLineDash([]);
-
-  // RSI曲线
-  ctx.strokeStyle = '#d4a843';
-  ctx.lineWidth = 2.5;
-  ctx.beginPath(); ctx.moveTo(30,100);ctx.lineTo(80,70);ctx.lineTo(130,45);ctx.lineTo(180,55);ctx.lineTo(230,85);ctx.lineTo(280,110);ctx.lineTo(330,120);
-  ctx.stroke();
-
-  ctx.fillStyle = '#d4a843';
-  ctx.font = '12px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('RSI线', 340, 115);
-}
-
-// 布林带
-function drawBollinger(ctx, w, h) {
-  drawGrid(ctx, w, h);
-  var midY = [90,85,80,75,70,72,68];
-  var topY = [70,60,55,50,45,48,42];
-  var botY = [110,110,105,100,95,96,94];
-
-  // 中轨
-  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(40,midY[0]);
-  for (var i=1;i<7;i++) ctx.lineTo(40+i*45, midY[i]);
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,0.4)';
-  ctx.font = '10px sans-serif';
-  ctx.fillText('中轨(MA20)', 280, 72);
-
-  // 上轨
-  ctx.strokeStyle = 'rgba(224,85,90,0.6)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(40,topY[0]);
-  for (var i=1;i<7;i++) ctx.lineTo(40+i*45, topY[i]);
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(224,85,90,0.6)';
-  ctx.fillText('上轨(+2σ)', 280, 50);
-
-  // 下轨
-  ctx.strokeStyle = 'rgba(76,175,132,0.6)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(40,botY[0]);
-  for (var i=1;i<7;i++) ctx.lineTo(40+i*45, botY[i]);
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(76,175,132,0.6)';
-  ctx.fillText('下轨(-2σ)', 280, 97);
-
-  // 收口标注
-  ctx.fillStyle = '#d4a843';
-  ctx.font = '12px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('收口后开口→大行情启动！', 180, 170);
-}
-
-// 艾略特波浪
-function drawElliott(ctx, w, h) {
-  drawGrid(ctx, w, h);
-  var points = [[30,140],[80,110],[120,125],[170,80],[200,95],[250,45],[280,70],[310,95],[340,85]];
-  ctx.strokeStyle = '#d4a843';
-  ctx.lineWidth = 3;
-  ctx.setLineDash([]);
-  ctx.beginPath();
-  ctx.moveTo(points[0][0], points[0][1]);
-  for (var i=1;i<points.length;i++) ctx.lineTo(points[i][0], points[i][1]);
-  ctx.stroke();
-
-  // 标注波浪
-  var labels = ['1','2','3','4','5','A','B','C'];
-  ctx.fillStyle = '#4caf84';
-  ctx.font = 'bold 13px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(labels[0], 30, 130);
-  ctx.fillText(labels[1], 80, 100);
-  ctx.fillText(labels[2], 170, 70);
-  ctx.fillText(labels[3], 200, 85);
-  ctx.fillText(labels[4], 250, 35);
-
-  ctx.fillStyle = '#e0555a';
-  ctx.fillText(labels[5], 280, 60);
-  ctx.fillText(labels[6], 310, 85);
-  ctx.fillText(labels[7], 340, 75);
-
-  ctx.fillStyle = '#d4a843';
-  ctx.font = '10px sans-serif';
-  ctx.fillText('推动浪（5浪）', 130, 20);
-  ctx.fillStyle = '#e0555a';
-  ctx.fillText('调整浪（3浪）', 300, 165);
-}
-
-// 通用K线模拟图
-function genericKlineCanvas(ctx, w, h, type) {
-  drawGrid(ctx, w, h);
-  for (var i=0;i<6;i++) {
-    var x=50+i*48, o=60+Math.random()*40, c=60+Math.random()*40, hi=Math.min(o,c)-10-Math.random()*20, lo=Math.max(o,c)+10+Math.random()*20;
-    drawCandle(ctx,x,o,c,hi,lo,12);
-  }
-  ctx.fillStyle = '#d4a843';
-  ctx.font = '11px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(type + ' 实战示例', w/2, h-8);
-}
-
-// ========== 速查Tab ==========
-var quickRefData = [
-  {title:'MA均线',def:'过去N日收盘价均值连线',signal:'金叉买/死叉卖；多头排列看涨'},
-  {title:'MACD',def:'快慢均线差值判断趋势强度',signal:'金叉买/死叉卖；背离信号极强'},
-  {title:'RSI',def:'衡量近期涨跌力量比(0-100)',signal:'>70超买卖；<30超卖买；背离'},
-  {title:'KDJ',def:'价格在近期高低区间的位置',signal:'J线拐头最灵敏；>100超买'},
-  {title:'布林带',def:'标准差通道判断极端价格',signal:'收口后开口=大行情；触轨反转'},
-  {title:'成交量',def:'价是表象，量是本质',signal:'放量上涨健康；天量天价顶部'},
-  {title:'锤子线',def:'长下影+小实体',signal:'下跌趋势末端=底部反转'},
-  {title:'吞没形态',def:'后一根实体完全包住前一根',signal:'看涨/看跌反转，成功率65%+'},
-  {title:'三只乌鸦',def:'连续三根实体阴线',signal:'强烈下跌确认，成功率78%'},
-  {title:'金叉/死叉',def:'短期均线上穿/下穿长期均线',signal:'金叉=买；死叉=卖'},
-  {title:'背离',def:'价格与指标方向相反',signal:'顶背离=卖；底背离=买'},
-  {title:'道氏趋势',def:'主要/次级/日间三种趋势',signal:'顺势交易，不与主趋势对抗'},
-  {title:'CAN SLIM',def:'欧奈尔七因子选股法',signal:'基本面+技术面结合'},
-  {title:'2N止损',def:'海龟法则ATR止损法',signal:'止损=入场价-2×ATR(20)'}
-];
-
-function renderQuickRef() {
-  var html = '<div class="quick-search"><input type="text" id="quick-search" placeholder="🔍 搜索指标/形态..." oninput="filterQuickRef()"></div><div id="quick-list">';
-  for (var i = 0; i < quickRefData.length; i++) {
-    var item = quickRefData[i];
-    html += '<div class="quick-card" data-search="' + item.title + ' ' + item.def + ' ' + item.signal + '">';
-    html += '<div class="qk-title">' + item.title + '</div>';
-    html += '<div class="qk-def">' + item.def + '</div>';
-    html += '<div class="qk-signal">📶 信号：' + item.signal + '</div>';
-    html += '</div>';
-  }
-  html += '</div>';
-  document.getElementById('tab-quick').innerHTML = html;
-}
-
-function filterQuickRef() {
-  var query = document.getElementById('quick-search').value.toLowerCase();
-  var cards = document.querySelectorAll('#quick-list .quick-card');
-  for (var i = 0; i < cards.length; i++) {
-    var search = cards[i].getAttribute('data-search').toLowerCase();
-    cards[i].style.display = search.indexOf(query) !== -1 ? '' : 'none';
-  }
-}
-
-// ========== 实战Tab ==========
-var battleScenes = [
-  {
-    kline: [[60,80,40,100],[75,70,60,95],[68,55,50,85],[50,40,35,65],[45,30,25,55],
-            [55,65,30,75],[70,80,55,90],[80,95,65,100],[90,110,75,120],[85,105,75,115],
-            [80,90,70,100],[75,60,65,85],[65,50,55,75],[55,40,45,65],[50,30,35,55]],
-    question: '📈 图中出现经典反转形态，此时应该？',
-    options: ['买入', '卖出', '观望', '加仓'],
-    answer: 0,
-    explain: '✅ 锤子线+阳线确认，底部反转信号明确！'
-  },
-  {
-    kline: [[50,55,40,60],[60,65,50,70],[70,80,55,85],[80,95,65,100],[90,110,75,115],
-            [95,100,80,105],[85,75,70,90],[80,60,65,85],[75,50,55,80],[70,45,50,75],
-            [60,40,45,65],[55,35,40,60],[50,30,35,55]],
-    question: '📉 MACD顶背离+三只乌鸦，此时应该？',
-    options: ['抄底买入', '减仓/离场', '加仓', '观望'],
-    answer: 1,
-    explain: '⚠️ 顶背离+三只乌鸦=强烈下跌信号，及时减仓！'
-  },
-  {
-    kline: [[30,35,20,45],[40,50,30,55],[50,65,40,70],[55,60,45,65],[50,45,40,55],
-            [45,40,35,50],[40,35,30,45],[35,30,25,40],[40,50,25,55],[50,60,35,65],
-            [60,75,45,80],[70,85,55,90],[80,100,65,105],[90,110,75,115],[95,120,80,125]],
-    question: '📊 布林带收口后向上突破，此时应该？',
-    options: ['观望', '卖出', '做空', '买入跟进'],
-    answer: 3,
-    explain: '🚀 布林带收口后开口向上=大行情启动，顺势跟进！'
-  }
-];
-var currentScene = 0;
-
-function renderBattleScene() {
-  if (currentScene >= battleScenes.length) {
-    document.getElementById('tab-battle').innerHTML = '<div class="battle-scene"><h3 style="color:var(--gold)">🎉 全部通关！</h3><p style="color:var(--text);margin:10px">你已经完成了所有实战模拟</p><button class="btn-primary" onclick="currentScene=0;renderBattleScene()">重新开始</button></div>';
-    return;
-  }
-  var scene = battleScenes[currentScene];
-  var html = '<div class="battle-scene">';
-  html += '<h3 style="color:var(--gold)">🎮 实战模拟 #' + (currentScene + 1) + '</h3>';
-  html += '<canvas id="battle-canvas" width="360" height="220"></canvas>';
-  html += '<div class="question">' + scene.question + '</div>';
-  for (var i = 0; i < scene.options.length; i++) {
-    html += '<button class="btn-secondary" onclick="checkBattleAnswer(' + i + ')">' + scene.options[i] + '</button>';
-  }
-  html += '<div id="battle-result"></div>';
-  html += '</div>';
-  document.getElementById('tab-battle').innerHTML = html;
-
-  setTimeout(function() {
-    drawBattleKline();
-  }, 200);
-}
-
-function drawBattleKline() {
-  var canvas = document.getElementById('battle-canvas');
-  if (!canvas) return;
-  var ctx = canvas.getContext('2d');
-  var w = canvas.width || 360, h = canvas.height || 220;
-  if (w < 10) w = 360; if (h < 10) h = 220;
-
-  ctx.fillStyle = '#0a1628';
-  ctx.fillRect(0, 0, w, h);
-  drawGrid(ctx, w, h);
-
-  var scene = battleScenes[currentScene];
-  var klines = scene.kline;
-  for (var i = 0; i < klines.length; i++) {
-    var k = klines[i], x = 25 + i * 22;
-    var o = h - k[0] - 20, c = h - k[1] - 20;
-    var l = h - k[2] - 20, hi = h - k[3] - 20;
-    drawCandle(ctx, x, o, c, hi, l, 10);
-  }
-
-  ctx.fillStyle = '#d4a843';
-  ctx.font = '10px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('← 历史走势 →', w/2, h-5);
-}
-
-function checkBattleAnswer(idx) {
-  var scene = battleScenes[currentScene];
-  var resultDiv = document.getElementById('battle-result');
-  if (idx === scene.answer) {
-    resultDiv.innerHTML = '<div class="battle-result" style="background:rgba(76,175,132,0.15)">✅ 正确！' + scene.explain + '<br><button class="btn-primary" style="margin-top:8px" onclick="currentScene++;renderBattleScene()">下一关 →</button></div>';
-    state.totalScore++;
-    saveState();
-  } else {
-    resultDiv.innerHTML = '<div class="battle-result" style="background:rgba(224,85,90,0.15)">❌ 错误！' + scene.explain + '<br><button class="btn-secondary" style="margin-top:8px" onclick="renderBattleScene()">再试一次</button></div>';
-  }
-}
-
-// ========== 我的Tab ==========
-function renderMyPage() {
-  var html = '<div class="my-info">';
-  html += '<h3 style="color:var(--gold);text-align:center">📊 学习统计</h3>';
-  html += '<div class="stat-row">';
-  html += '<div class="stat-item"><div class="stat-num">' + state.completedChapters.length + '/10</div><div class="stat-label">章节进度</div></div>';
-  html += '<div class="stat-item"><div class="stat-num">' + state.totalScore + '</div><div class="stat-label">正确答题</div></div>';
-  html += '<div class="stat-item"><div class="stat-num">' + state.totalAnswered + '</div><div class="stat-label">总答题数</div></div>';
-  html += '</div>';
-  html += '<button onclick="switchTab(\'quick\')">📖 技术指标速查</button>';
-  html += '<button onclick="switchTab(\'battle\');renderBattleScene()">🎮 实战模拟演练</button>';
-  html += '<button onclick="resetAll()">🔄 重置学习进度</button>';
-  html += '<p style="color:#667788;font-size:11px;text-align:center;margin-top:16px">StockKlineMaster v1.0<br>K线学习助手 · 纯离线版</p>';
-  html += '</div>';
-  document.getElementById('tab-my').innerHTML = html;
-}
-
-function resetAll() {
-  if (confirm('确定要重置所有学习进度吗？此操作不可恢复！')) {
-    state.completedChapters = [];
-    state.unlockedChapter = 1;
-    state.quizResults = {};
-    state.totalScore = 0;
-    state.totalAnswered = 0;
-    saveState();
-    updateProgress();
-    renderChapterList();
-    renderMyPage();
-    showToast('已重置学习进度');
-  }
-}
-
-// 初始化
-document.addEventListener('DOMContentLoaded', init);
-
-</script>
-</body>
-</html>
+try{window.onerror=function(m){document.getElementById("fb").innerHTML+='<p style="color:#fb7185;font-size:10px">⚠ '+m+'</p>';return true};
+var D=JSON.parse(document.getElementById("dt").textContent),B=D.books,S=D.stages,E=D.edges,BM={};
+B.forEach(function(b){BM[b.id]=b});
+var LS='klm4',P={};
+try{var r=localStorage.getItem(LS);if(r)P=JSON.parse(r)}catch(e){}
+function sp(){try{localStorage.setItem(LS,JSON.stringify(P))}catch(e){}}
+function bDone(bid){var b=BM[bid];if(!b)return 0;var c=0;b.chapters.forEach(function(ch,i){if(P[bid+'_c'+i])c++});return c}
+function bPct(bid){var b=BM[bid];return b&&b.chapters.length?Math.round(bDone(bid)/b.chapters.length*100):0}
+function aPct(){var t=0,d=0;B.forEach(function(b){t+=b.chapters.length;d+=bDone(b.id)});return t?Math.round(d/t*100):0}
+function aHrs(){var h=0;B.forEach(function(b){if(bPct(b.id)>0)h+=Math.round(b.hours*bPct(b.id)/100)});return h}
+function tglCh(bid,ci){var k=bid+'_c'+ci;P[k]=!P[k];sp();rfAll();toast(P[k]?'✅ 已学完':'↩ 标记未学')}
+function toast(m){var t=document.createElement("div");t.className="toast";t.textContent=m;document.body.appendChild(t);setTimeout(function(){t.remove()},1800)}
+
+var CT='path';
+document.querySelectorAll(".tb").forEach(function(b){b.addEventListener("click",function(){CT=this.dataset.tab;document.querySelectorAll(".tb").forEach(function(x){x.classList.remove("on")});this.classList.add("on");document.querySelectorAll(".pn").forEach(function(x){x.classList.remove("show")});document.getElementById("pn-"+CT).classList.add("show");if(CT==='graph')setTimeout(dg,300)})});
+function st(t){CT=t;document.querySelectorAll(".tb").forEach(function(b){b.classList.remove("on")});document.querySelector('[data-tab="'+t+'"]').classList.add("on");document.querySelectorAll(".pn").forEach(function(p){p.classList.remove("show")});document.getElementById("pn-"+t).classList.add("show")}
+
+// path
+function rp(){var h="";S.forEach(function(st){var t=0,d=0;st.books.forEach(function(bid){var b=BM[bid];if(b){t+=b.chapters.length;d+=bDone(bid)}});var p=t?Math.round(d/t*100):0;h+='<div class="sc"><div class="si2">'+st.icon+'</div><div class="sn2">'+st.name+'</div><div class="ss">'+st.sub+'</div><div class="sd">'+st.desc+'</div><div class="sbs">';st.books.forEach(function(bid){var b=BM[bid];if(b)h+='<span class="chip'+(bPct(bid)>0?' read':'')+'" data-bid="'+bid+'">'+(bPct(bid)>0?'✅ ':'')+b.title+'</span>'});h+='</div><div class="sp">进度 '+p+'%</div><div class="pb"><div class="pf" style="width:'+p+'%"></div></div></div>'});document.getElementById("pn-path").innerHTML=h;document.querySelectorAll(".chip").forEach(function(c){c.addEventListener("click",function(e){e.stopPropagation();sm(this.dataset.bid)})})}
+
+// library
+var cats=[];B.forEach(function(b){if(cats.indexOf(b.category)===-1)cats.push(b.category)});
+var cf=document.getElementById("lfc");cf.innerHTML='<option value="all">全部分类 ('+B.length+')</option>';cats.sort().forEach(function(c){var n=0;B.forEach(function(b){if(b.category===c)n++});cf.innerHTML+='<option value="'+c+'">'+c+' ('+n+')</option>'});
+for(var i=1;i<=6;i++)document.getElementById("lfs").innerHTML+='<option value="'+i+'">'+['','一','二','三','四','五','六'][i]+'阶</option>';
+function rl(){var q=(document.getElementById("ls").value||"").toLowerCase(),fc=document.getElementById("lfc").value,fs=parseInt(document.getElementById("lfs").value)||0,fd=parseInt(document.getElementById("lfd").value)||0;var f=B.filter(function(b){if(fc!=="all"&&b.category!==fc)return false;if(fs>0&&b.stage!==fs)return false;if(fd>0&&b.diff!==fd)return false;if(q&&b.title.toLowerCase().indexOf(q)===-1&&b.author.toLowerCase().indexOf(q)===-1)return false;return true});var h="";f.forEach(function(b){var p=bPct(b.id);h+='<div class="bc'+(p>=100?" done":"")+'" data-bid="'+b.id+'"><div class="bg">'+b.category+'</div><div class="bt">'+b.title+'</div><div class="ba">'+b.author+'</div><div class="bs">'+b.summary+'</div>';if(p>0)h+='<div class="bp">📖 '+bDone(b.id)+'/'+b.chapters.length+' 章节</div>';h+='<div class="bm"><span>⏱ '+b.hours+'h</span><span>'+'⭐'.repeat(b.diff)+'</span><span>'+b.stage+'阶</span></div></div>'});document.getElementById("lgrid").innerHTML=h||'<div style="text-align:center;padding:40px;color:var(--muted)">无匹配书籍</div>';document.querySelectorAll(".bc").forEach(function(c){c.addEventListener("click",function(){sm(this.dataset.bid)})})}
+document.getElementById("ls").addEventListener("input",rl);document.getElementById("lfc").addEventListener("change",rl);document.getElementById("lfs").addEventListener("change",rl);document.getElementById("lfd").addEventListener("change",rl);
+
+// modal
+function sm(bid){var b=BM[bid];if(!b)return;var pct=bPct(bid),stage=S.find(function(s){return s.books.indexOf(bid)>=0}),stName=stage?stage.name:'';var el=document.createElement("div");el.className="mo";el.id="mo";var chs='';b.chapters.forEach(function(ch,i){var dn=!!P[bid+'_c'+i];var lbl='',lcls='';if(ch.level==='必修'){lbl='必修';lcls='must'}else if(ch.level==='推荐'){lbl='推荐';lcls='rec'}else{lbl='选读';lcls='opt'};chs+='<div class="ci"><div class="ch'+(dn?' open':'')+'" data-ci="'+i+'"><div class="cn'+(dn?' done':'')+'">'+(dn?'✓':(i+1))+'</div><div class="ct">'+ch.title+'</div><span class="cl '+lcls+'">'+lbl+'</span><div class="ca">▼</div></div><div class="cb'+(dn?' open':'')+'">';ch.points.forEach(function(pt){chs+='<div class="pti"><div class="ptt">'+pt.t+'</div><div class="ptc">'+pt.c+'</div>';if(pt.detail)chs+='<div class="ptd">'+pt.detail+'</div>';if(pt.highlights&&pt.highlights.length)pt.highlights.forEach(function(hl){var cc={'gold':'g','blue':'b','red':'r','green':'gr','purple':'p'}[hl.color]||'b';chs+='<div class="hlb '+cc+'">'+hl.text+'</div>'});chs+='</div>'});chs+='</div></div>'});var kcs='';b.knowledge_cards.forEach(function(kc){kcs+='<div class="kc"><div class="kt '+kc.type+'">'+{concept:'📘 核心概念',rule:'📋 交易规则',formula:'🔢 公式计算'}[kc.type]+'</div><div class="kn">'+kc.t+'</div><p>'+kc.c+'</p></div>'});var qts='';if(b.quotes&&b.quotes.length)b.quotes.forEach(function(q){qts+='<div class="qt">"'+q+'"</div>'});if(b.practice&&b.practice.length){qts+='<div style="font-size:12px;color:var(--gold);margin:12px 0 6px;font-weight:700">🎯 实战启示</div>';b.practice.forEach(function(p){qts+='<div class="pi">'+p+'</div>'})}el.innerHTML='<div class="mc"><div class="mh"><button class="mx" id="mcls">✕</button><div class="mt">'+b.title+'</div><div class="ms">'+b.author+' · '+b.category+' · '+b.stage+'阶 · '+'⭐'.repeat(b.diff)+' · '+b.chapters.length+'章节</div><div class="br"><a id="brStage">'+stName+'</a><span>›</span><span>'+b.title+'</span></div><div class="stbs"><button class="stb on" data-stab="chs">📖 章节 ('+bDone(bid)+'/'+b.chapters.length+')</button><button class="stb" data-stab="kcs">🧠 卡片 ('+b.knowledge_cards.length+')</button><button class="stb" data-stab="qts">💬 名言</button></div></div><div class="mb"><div class="spn" id="sp-chs">'+chs+'</div><div class="spn" id="sp-kcs" style="display:none">'+kcs+'</div><div class="spn" id="sp-qts" style="display:none">'+qts+'</div></div></div>';document.body.appendChild(el);document.getElementById("mcls").addEventListener("click",function(){el.remove();rfAll()});el.addEventListener("click",function(e){if(e.target===el){el.remove();rfAll()}});el.querySelectorAll(".stb").forEach(function(t){t.addEventListener("click",function(){el.querySelectorAll(".stb").forEach(function(x){x.classList.remove("on")});this.classList.add("on");el.querySelectorAll(".spn").forEach(function(x){x.style.display="none"});document.getElementById("sp-"+this.dataset.stab).style.display="block"})});el.querySelectorAll(".ch").forEach(function(ch){ch.addEventListener("click",function(){this.classList.toggle("open");var bd=this.nextElementSibling;bd.classList.toggle("open");if(bd.classList.contains("open"))tglCh(bid,parseInt(this.dataset.ci))})});document.getElementById("brStage").addEventListener("click",function(){el.remove();st('path')})}
+
+// graph - enhanced with relationship types
+var gn=[],typeColors={similar:'#34d399',complement:'#4da6ff',extends:'#f0c040',contrast:'#fb7185',foundation:'#a78bfa'};
+function dg(){var c=document.getElementById("gcv"),w=c.parentElement.clientWidth,h=460;if(w<10)w=700;c.width=w;c.height=h;var ctx=c.getContext("2d");if(!gn.length){gn=[];var cc=['#22d3ee','#34d399','#f59e0b','#a78bfa','#fb7185','#fbbf24','#38bdf8','#f97316','#06b6d4','#a855f7'],cm={},ci=0;B.forEach(function(b){if(cm[b.category]===undefined){cm[b.category]=ci;ci++}});B.forEach(function(b,i){gn.push({id:b.id,title:b.title,color:cc[cm[b.category]%cc.length],x:Math.random()*w*.65+w*.175,y:Math.random()*h*.65+h*.175,vx:0,vy:0,r:4+b.stage})})}for(var iter=0;iter<55;iter++){for(var i=0;i<gn.length;i++)for(var j=i+1;j<gn.length;j++){var dx=gn[j].x-gn[i].x,dy=gn[j].y-gn[i].y,dist=Math.sqrt(dx*dx+dy*dy)||1;if(dist<65){var f=.35*(65-dist)/dist;gn[i].vx-=dx*f;gn[i].vy-=dy*f;gn[j].vx+=dx*f;gn[j].vy+=dy*f}}E.forEach(function(e){var a=gn.find(function(n){return n.id===e.from}),b2=gn.find(function(n){return n.id===e.to});if(a&&b2){var dx=b2.x-a.x,dy=b2.y-a.y,dist=Math.sqrt(dx*dx+dy*dy)||1,force=.006*(dist-45)/dist;a.vx+=dx*force;a.vy+=dy*force;b2.vx-=dx*force;b2.vy-=dy*force}});gn.forEach(function(n){n.vx+=(w/2-n.x)*.002;n.vy+=(h/2-n.y)*.002;n.vx*=.78;n.vy*=.78;n.x+=n.vx;n.y+=n.vy;n.x=Math.max(18,Math.min(w-18,n.x));n.y=Math.max(18,Math.min(h-18,n.y))})}ctx.clearRect(0,0,w,h);ctx.fillStyle="#0a0e27";ctx.fillRect(0,0,w,h);E.forEach(function(e){var a=gn.find(function(n){return n.id===e.from}),b2=gn.find(function(n){return n.id===e.to});if(a&&b2){ctx.strokeStyle=typeColors[e.type]||'rgba(100,130,180,.3)';ctx.lineWidth=e.type==='contrast'?1.5:0.8;ctx.setLineDash(e.type==='foundation'?[4,3]:[]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b2.x,b2.y);ctx.stroke();ctx.setLineDash([]);var mx=(a.x+b2.x)/2,my=(a.y+b2.y)/2;ctx.fillStyle='rgba(180,200,220,.5)';ctx.font='7px sans-serif';ctx.fillText(e.label||'',mx-10,my-2)}});gn.forEach(function(n){ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.fillStyle=n.color;ctx.fill();ctx.strokeStyle="rgba(255,255,255,.2)";ctx.lineWidth=1;ctx.stroke();ctx.fillStyle="#fff";ctx.font="bold 8px sans-serif";var t=n.title.length>6?n.title.slice(0,6):n.title;ctx.fillText(t,n.x-10,n.y+n.r+10)});var seen={},cs=[];gn.forEach(function(n){if(!seen[n.color]){seen[n.color]=true;var cat="";Object.keys(cm).forEach(function(k){if(cc[cm[k]%cc.length]===n.color)cat=k});cs.push({name:cat,color:n.color})}});document.getElementById("gleg").innerHTML=cs.map(function(c){return'<div class="li"><div class="ld" style="background:'+c.color+'"></div>'+c.name+'</div>'}).join("");document.getElementById("gedge").innerHTML='<span class="el similar">相似</span><span class="el complement">互补</span><span class="el extends">进阶</span><span class="el contrast">对立</span><span class="el foundation">奠基</span>'}
+document.getElementById("gcv").addEventListener("click",function(e){if(!gn.length)return;var r=this.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;for(var i=0;i<gn.length;i++){var n=gn[i],dx=mx-n.x,dy=my-n.y;if(dx*dx+dy*dy<200){sm(n.id);return}}});
+
+// progress
+function rpr(){var h="";B.forEach(function(b){var d=bDone(b.id),t=b.chapters.length,p=Math.round(d/t*100);h+='<div class="pr" data-bid="'+b.id+'"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px">'+b.title+'</span><div class="pbar"><div class="pbf" style="width:'+p+'%"></div></div><span class="pps">'+p+'%</span></div>'});document.getElementById("pgrid").innerHTML=h;var ap=aPct();document.getElementById("pwf").style.width=ap+"%";document.getElementById("ppct").textContent=ap+"%";document.getElementById("dc").textContent=Math.round(ap/100*37);document.getElementById("hr").textContent=aHrs();var tc1=0;B.forEach(function(b){tc1+=b.chapters.length});document.getElementById("tc").textContent=tc1;document.querySelectorAll(".pr").forEach(function(r){r.addEventListener("click",function(){sm(this.dataset.bid)})})}
+document.getElementById("rst").addEventListener("click",function(){if(confirm("重置所有学习进度？")){P={};sp();rfAll();toast("🔄 已重置")}});
+
+function rfAll(){rp();rl();rpr()}
+document.body.classList.add("js-ready");rfAll();
+}catch(e){document.getElementById("fb").innerHTML+='<p style="color:#fb7185">错误: '+e.message+'</p>'}
+</script></body></html>
